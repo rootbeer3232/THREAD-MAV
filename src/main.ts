@@ -16,6 +16,7 @@ import { calculatorsScreen } from './screens/calcs';
 import { helpScreen } from './screens/help';
 import { homeScreen } from './screens/home';
 import { historyScreen, savedScreen } from './screens/lists';
+import { drillChartScreen, threadChartScreen } from './screens/charts';
 import { settingsScreen } from './screens/settings';
 
 async function boot() {
@@ -46,6 +47,8 @@ async function boot() {
     { route: 'calcs', title: 'Calculators', tab: 'calcs', render: (c) => calculatorsScreen(c) },
     { route: 'thread', title: 'Thread / 3-Wire', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountThread(c, p) },
     { route: 'sine', title: 'Sine Bar Calculator', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountSine(c, p) },
+    { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
+    { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },
     { route: 'history', title: 'History', tab: 'history', render: (c) => historyScreen(c) },
     { route: 'settings', title: 'Settings', tab: 'settings', render: (c) => settingsScreen(c) },

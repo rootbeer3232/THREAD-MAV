@@ -30,8 +30,9 @@ const planned = (id: string, name: string, blurb: string, category: CategoryId):
 
 export const CALCULATORS: CalculatorEntry[] = [
   { id: 'thread', name: 'Thread / 3-Wire', blurb: 'Unified, ISO metric & custom. Best wire, over-wires, pitch diameter.', category: 'threads', status: 'ready', route: 'thread' },
+  { id: 'thread-chart', name: 'Thread Chart', blurb: 'Unified & metric sizes, basic dimensions, tap drill, % thread.', category: 'threads', status: 'ready', route: 'threadchart' },
+  { id: 'drill-chart', name: 'Drill Chart', blurb: 'Fraction, number, letter, metric — find the nearest drill.', category: 'threads', status: 'ready', route: 'drillchart' },
   planned('thread-depth', 'Thread Depth / Compound Infeed', 'Lathe threading infeed helper', 'threads'),
-  planned('tap-drill', 'Tap Drill / Percent Thread', 'Tap drill and percent thread', 'threads'),
   { id: 'sine', name: 'Sine Bar', blurb: 'Find stack height or angle. 5.000" preset or custom bar.', category: 'angles', status: 'ready', route: 'sine' },
   planned('taper', 'Taper', 'Diameters, length, taper per inch/foot, angles', 'angles'),
   planned('triangle', 'Triangle Solver', 'Right-triangle shop trig', 'angles'),
