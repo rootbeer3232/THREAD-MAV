@@ -14,7 +14,7 @@ export function presentSine(r: SineResult, o: FormatOptions): Presentation {
   });
   const rows =
     r.mode === 'stack'
-      ? [{ label: 'Gage-block stack height', dual: d(r.stackHeight), size: 'hero' as const }, angleRow('normal')]
+      ? [{ label: 'Stack Height Required', dual: d(r.stackHeight), size: 'hero' as const }, angleRow('normal')]
       : [angleRow('hero'), { label: 'Gage-block stack height', dual: d(r.stackHeight), size: 'normal' as const }];
   return {
     title: `Sine Bar — ${barText}`,
@@ -25,7 +25,7 @@ export function presentSine(r: SineResult, o: FormatOptions): Presentation {
       { title: 'Sine bar', rows: [{ label: 'Roller center-to-center', dual: d(r.barLength), size: 'normal' }] },
     ],
     messages: [
-      { tone: 'info', text: r.mode === 'stack' ? 'Stack = L × sin θ' : 'θ = asin( stack ÷ L )' },
+      { tone: 'info', text: r.mode === 'stack' ? `Formula: Stack Height = Sine(Angle) × ${barText}` : `Formula: Angle = asin( Stack Height ÷ ${barText} )` },
       ...r.advisories.map((a) => ({ tone: 'warn' as const, text: a })),
     ],
   };

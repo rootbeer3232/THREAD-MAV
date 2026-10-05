@@ -80,3 +80,15 @@ describe('sine bar — D/M/S entry', () => {
     expect(angleFromDms(1, Number.NaN, 0).ok).toBe(false);
   });
 });
+
+import { angleFromParts } from '../src/calculators/sine/engine';
+describe('sine bar — one-row angle entry', () => {
+  it('decimal degrees alone', () => expect(ok(angleFromParts(15.5, 0, 0))).toBe(15.5));
+  it('D/M/S', () => expect(ok(angleFromParts(15, 30, 36))).toBeCloseTo(15.51, 12));
+  it('rejects decimal degrees mixed with minutes', () => expect(angleFromParts(15.5, 30, 0).ok).toBe(false));
+  it('rejects bad parts', () => {
+    expect(angleFromParts(15, 61, 0).ok).toBe(false);
+    expect(angleFromParts(-1, 0, 0).ok).toBe(false);
+    expect(angleFromParts(Number.NaN, 0, 0).ok).toBe(false);
+  });
+});

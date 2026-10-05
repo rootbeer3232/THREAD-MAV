@@ -44,13 +44,13 @@ async function boot() {
   const screens: ScreenDef[] = [
     { route: '', title: 'Thread Mav', tab: 'home', render: (c) => homeScreen(c) },
     { route: 'calcs', title: 'Calculators', tab: 'calcs', render: (c) => calculatorsScreen(c) },
-    { route: 'thread', title: 'Thread / 3-Wire', tab: 'calcs', back: 'calcs', render: (c, p) => mountThread(c, p) },
-    { route: 'sine', title: 'Sine Bar', tab: 'calcs', back: 'calcs', render: (c, p) => mountSine(c, p) },
+    { route: 'thread', title: 'Thread / 3-Wire', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountThread(c, p) },
+    { route: 'sine', title: 'Sine Bar Calculator', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountSine(c, p) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },
     { route: 'history', title: 'History', tab: 'history', render: (c) => historyScreen(c) },
     { route: 'settings', title: 'Settings', tab: 'settings', render: (c) => settingsScreen(c) },
-    { route: 'help', title: 'Help', tab: 'settings', back: 'settings', render: (c, p) => helpScreen(c, p) },
-    { route: 'about', title: 'About', tab: 'settings', back: 'settings', render: (c) => aboutScreen(c) },
+    { route: 'help', title: 'Help', tab: 'settings', back: 'settings', backLabel: 'Settings', render: (c, p) => helpScreen(c, p) },
+    { route: 'about', title: 'About', tab: 'settings', back: 'settings', backLabel: 'Settings', render: (c) => aboutScreen(c) },
   ];
 
   const shell = buildShell(ctx);

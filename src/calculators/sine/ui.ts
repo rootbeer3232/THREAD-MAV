@@ -7,23 +7,21 @@ import { toShareText, toSummary } from '../../core/present-common';
 import { dualFrom, type Unit } from '../../core/units';
 import type { CalcRecord } from '../../storage/types';
 import { createActionBar } from '../../ui/action-bar';
-import { type NumericField, chips, numericField, renderPresentation, segmented } from '../../ui/components';
+import { type NumericField, numericField, renderPresentation, segmented } from '../../ui/components';
 import { h } from '../../ui/dom';
 import { sineDiagram } from './diagram';
-import { type SineResult, angleFromDms, solveAngle, solveStackHeight } from './engine';
+import { type SineResult, angleFromParts, solveAngle, solveStackHeight } from './engine';
 import { presentSine } from './present';
 
 type Mode = 'stack' | 'angle';
-type BarPreset = '5' | '10' | 'custom';
-type AngleEntry = 'deg' | 'dms';
+type BarPreset = '5' | 'custom';
 
 interface SineForm {
   mode: Mode;
   preset: BarPreset;
-  customUnit: Unit;
+  /** Unit for the custom bar length, the stack height and the primary result display. */
+  unit: Unit;
   customLengthText: string;
-  angleEntry: AngleEntry;
-  angleText: string;
   dText: string;
   mText: string;
   sText: string;
@@ -33,23 +31,21 @@ interface SineForm {
 const defaults = (unit: Unit): SineForm => ({
   mode: 'stack',
   preset: '5',
-  customUnit: unit,
+  unit,
   customLengthText: '',
-  angleEntry: 'deg',
-  angleText: '',
   dText: '',
   mText: '',
   sText: '',
   stackText: '',
 });
 
-/** Preset bars are inch; "custom" uses the chosen unit. */
+/** The 5.000" preset is exact in either unit (5 in = 127 mm). */
 function barSpec(f: SineForm): { length: number | null; unit: Unit; issue?: CalcIssue } {
-  if (f.preset !== 'custom') return { length: Number(f.preset), unit: 'in' };
+  if (f.preset !== 'custom') return { length: f.unit === 'in' ? 5 : 127, unit: f.unit };
   const v = parseDecimal(f.customLengthText);
-  if (v === null) return { length: null, unit: f.customUnit, issue: { field: 'bar', message: 'Enter the roller center-to-center distance.' } };
-  if (Number.isNaN(v)) return { length: null, unit: f.customUnit, issue: { field: 'bar', message: 'Bar length isn’t a valid number.' } };
-  return { length: v, unit: f.customUnit };
+  if (v === null) return { length: null, unit: f.unit, issue: { field: 'bar', message: 'Enter the roller center-to-center distance.' } };
+  if (Number.isNaN(v)) return { length: null, unit: f.unit, issue: { field: 'bar', message: 'Bar length isn’t a valid number.' } };
+  return { length: v, unit: f.unit };
 }
 
 function solve(f: SineForm): Result<SineResult> {
@@ -57,21 +53,13 @@ function solve(f: SineForm): Result<SineResult> {
   if (bar.issue) return { ok: false, issues: [bar.issue] };
   const L = bar.length!;
   if (f.mode === 'stack') {
-    let angle: number;
-    if (f.angleEntry === 'deg') {
-      const a = parseDecimal(f.angleText);
-      if (a === null) return fail('Enter the angle.', 'angle');
-      if (Number.isNaN(a)) return fail('Angle isn’t a valid number.', 'angle');
-      angle = a;
-    } else {
-      const d = parseDecimal(f.dText) ?? 0;
-      const m = parseDecimal(f.mText) ?? 0;
-      const s = parseDecimal(f.sText) ?? 0;
-      if (f.dText === '' && f.mText === '' && f.sText === '') return fail('Enter the angle in degrees, minutes and seconds.', 'angle');
-      const r = angleFromDms(d, m, s);
-      if (!r.ok) return r as Result<never>;
-      angle = r.value;
-    }
+    if (f.dText === '' && f.mText === '' && f.sText === '') return fail('Enter the angle.', 'angle');
+    const d = parseDecimal(f.dText) ?? 0;
+    const m = parseDecimal(f.mText) ?? 0;
+    const sec = parseDecimal(f.sText) ?? 0;
+    const r = angleFromParts(d, m, sec);
+    if (!r.ok) return r as Result<never>;
+    const angle = r.value;
     return solveStackHeight({ barLength: L, unit: bar.unit, angleDeg: angle });
   }
   const st = parseDecimal(f.stackText);
@@ -135,11 +123,11 @@ export async function mountSine(ctx: AppContext, params: URLSearchParams): Promi
   const barLabel = () => {
     const b = barSpec(form);
     if (b.length === null || !(b.length > 0)) return '—';
-    return `${fmtLength(b.length, b.unit, formatOptions(ctx.settings), b.unit === 'in' ? 3 : 2)}${b.unit === 'in' ? '"' : ' mm'}`;
+    return b.unit === 'in' ? `${b.length.toFixed(3)}"` : `${b.length.toFixed(2)} mm`;
   };
 
   function drawDiagram(angle: number | null, stackLabel?: string | null) {
-    diagramHost.replaceChildren(sineDiagram({ angleDeg: angle, barLabel: barLabel(), stackLabel: stackLabel ?? null }));
+    diagramHost.replaceChildren(sineDiagram({ angleDeg: angle, barLabel: barLabel(), stackLabel: stackLabel ?? null }), h('div', { class: 'slogan' }, 'Angle with Precision. Parts with Confidence.'));
   }
 
   const num = (id: string, label: string, value: string, unit: string | null, onInput: (v: string) => void, placeholder = '') => {
@@ -163,13 +151,49 @@ export async function mountSine(ctx: AppContext, params: URLSearchParams): Promi
     for (const k of Object.keys(fields)) delete fields[k];
     const parts: HTMLElement[] = [];
 
+    // Row 1: bar preset chips + Inch/Metric (as in the approved Sine Bar design)
+    parts.push(
+      h(
+        'div',
+        { class: 'sine-top' },
+        h(
+          'div',
+          { class: 'preset-row' },
+          presetBtn('5', '5.000"', 'Sine Bar'),
+          presetBtn('custom', 'Custom', 'Length'),
+        ),
+        segmented<Unit>({
+          ariaLabel: 'Units',
+          value: form.unit,
+          extraClass: 'seg-unit',
+          options: [
+            { value: 'in', label: 'Inch' },
+            { value: 'mm', label: 'Metric' },
+          ],
+          onChange: (u) => {
+            if (u === form.unit) return;
+            form.unit = u;
+            form.customLengthText = '';
+            form.stackText = '';
+            invalidate();
+            drawDiagram(null);
+            build();
+          },
+        }),
+      ),
+    );
+    if (form.preset === 'custom') {
+      parts.push(h('section', { class: 'card form-card' }, num('bar', 'Roller center-to-center distance', form.customLengthText, form.unit, (v) => { form.customLengthText = v; drawDiagram(null); }, form.unit === 'in' ? 'e.g. 10' : 'e.g. 200').el));
+    }
+
     parts.push(
       segmented<Mode>({
         ariaLabel: 'Sine bar mode',
         value: form.mode,
+        extraClass: 'seg-mode',
         options: [
-          { value: 'stack', label: 'FIND STACK', sub: 'angle → height' },
-          { value: 'angle', label: 'FIND ANGLE', sub: 'height → angle' },
+          { value: 'stack', label: 'Find Stack Height' },
+          { value: 'angle', label: 'Find Angle' },
         ],
         onChange: (m) => {
           if (m === form.mode) return;
@@ -180,87 +204,44 @@ export async function mountSine(ctx: AppContext, params: URLSearchParams): Promi
       }),
     );
 
-    const barCard = h('section', { class: 'card form-card' }, h('h3', { class: 'card-title' }, 'Sine bar length'));
-    barCard.append(
-      chips({
-        ariaLabel: 'Sine bar length',
-        selected: form.preset,
-        items: [
-          { value: '5', label: '5.000"', sub: 'standard' },
-          { value: '10', label: '10.000"' },
-          { value: 'custom', label: 'CUSTOM' },
-        ],
-        onPick: (v) => {
-          form.preset = v as BarPreset;
-          invalidate();
-          build();
-        },
-      }),
-    );
-    if (form.preset === 'custom') {
-      barCard.append(
-        segmented<Unit>({
-          ariaLabel: 'Bar length units',
-          value: form.customUnit,
-          tone: 'neutral',
-          options: [
-            { value: 'in', label: 'INCH' },
-            { value: 'mm', label: 'METRIC mm' },
-          ],
-          onChange: (u) => {
-            form.customUnit = u;
-            invalidate();
-            build();
-          },
-        }),
-        num('bar', 'Roller center-to-center distance', form.customLengthText, form.customUnit, (v) => (form.customLengthText = v), 'e.g. 200').el,
-      );
-    } else {
-      const d = dualFrom(Number(form.preset), 'in');
-      barCard.append(h('div', { class: 'readout' }, h('span', { class: 'val-in' }, `${d.in.toFixed(3)} in`), h('span', { class: 'dim' }, ' ('), h('span', { class: 'val-mm' }, `${d.mm.toFixed(2)} mm`), h('span', { class: 'dim' }, ')')));
-    }
-    parts.push(barCard);
-
-    const inUnit = barSpec(form).unit;
-    const input = h('section', { class: 'card form-card' });
+    const input = h('section', { class: 'form-card plain' });
     if (form.mode === 'stack') {
-      input.append(
-        h('h3', { class: 'card-title' }, 'Angle'),
-        segmented<AngleEntry>({
-          ariaLabel: 'Angle entry format',
-          value: form.angleEntry,
-          tone: 'neutral',
-          options: [
-            { value: 'deg', label: 'DECIMAL °' },
-            { value: 'dms', label: 'D / M / S' },
-          ],
-          onChange: (v) => {
-            form.angleEntry = v;
-            invalidate();
-            build();
-          },
-        }),
-      );
-      if (form.angleEntry === 'deg') {
-        input.append(num('angle', 'Angle', form.angleText, '°', (v) => (form.angleText = v), 'e.g. 15 or 22.5').el);
-      } else {
-        const d = num('dms-d', 'Degrees', form.dText, '°', (v) => (form.dText = v));
-        const m = num('dms-m', 'Minutes', form.mText, '′', (v) => (form.mText = v));
-        const sec = num('dms-s', 'Seconds', form.sText, '″', (v) => (form.sText = v));
-        fields['angle'] = d; // errors surface on the degrees field
-        input.append(h('div', { class: 'dms-row' }, d.el, m.el, sec.el));
-      }
+      const d = num('dms-d', '', form.dText, '°', (v) => (form.dText = v), '0');
+      const m = num('dms-m', '', form.mText, '′', (v) => (form.mText = v), '0');
+      const sec = num('dms-s', '', form.sText, '″', (v) => (form.sText = v), '0');
+      fields['angle'] = d;
+      input.append(h('h3', { class: 'field-title' }, 'Enter Angle'), h('div', { class: 'dms-row' }, d.el, m.el, sec.el), h('div', { class: 'field-hint' }, 'Enter as decimal degrees or D/M/S'));
     } else {
-      input.append(h('h3', { class: 'card-title' }, 'Gage-block stack'), num('stack', 'Stack height', form.stackText, inUnit, (v) => (form.stackText = v), inUnit === 'in' ? 'e.g. 1.2941' : 'e.g. 32.870').el);
+      input.append(h('h3', { class: 'field-title' }, 'Enter Stack Height'), num('stack', '', form.stackText, form.unit, (v) => (form.stackText = v), form.unit === 'in' ? 'e.g. 1.2941' : 'e.g. 32.870').el);
     }
     parts.push(input);
 
     parts.push(
-      h('button', { class: 'btn btn-calc', type: 'button', on: { click: () => void calculate() } }, 'CALCULATE'),
-      h('div', { class: 'btn-row' }, h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: () => clearForm() } }, 'CLEAR')),
+      h('div', { class: 'btn-row calc-row' }, h('button', { class: 'btn btn-calc-blue', type: 'button', on: { click: () => void calculate() } }, 'Calculate'), h('button', { class: 'btn btn-secondary', type: 'button', on: { click: () => clearForm() } }, 'Clear')),
       h('div', { class: 'err-banner', id: 'err-banner', role: 'alert' }),
     );
     formHost.replaceChildren(...parts);
+  }
+
+  function presetBtn(v: BarPreset, big: string, small: string) {
+    return h(
+      'button',
+      {
+        type: 'button',
+        class: 'preset-btn',
+        'aria-pressed': String(form.preset === v),
+        on: {
+          click: () => {
+            form.preset = v;
+            invalidate();
+            drawDiagram(null);
+            build();
+          },
+        },
+      },
+      h('strong', null, big),
+      h('span', null, small),
+    );
   }
 
   function showIssues(issues: CalcIssue[]) {
@@ -320,7 +301,7 @@ export async function mountSine(ctx: AppContext, params: URLSearchParams): Promi
   }
 
   function clearForm() {
-    form = { ...defaults(ctx.settings.defaultUnit), mode: form.mode, preset: form.preset, customUnit: form.customUnit, customLengthText: form.customLengthText, angleEntry: form.angleEntry };
+    form = { ...defaults(ctx.settings.defaultUnit), mode: form.mode, preset: form.preset, unit: form.unit, customLengthText: form.customLengthText };
     presentation = null;
     record = null;
     resultHost.replaceChildren();

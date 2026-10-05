@@ -5,12 +5,12 @@ import { s } from '../../ui/dom';
  * picture stays legible); it is NOT to scale and says so by being a diagram only.
  */
 export function sineDiagram(opts: { angleDeg: number | null; barLabel: string; stackLabel?: string | null }): SVGSVGElement {
-  const W = 360;
+  const W = 400;
   const H = 210;
   const plateY = 178;
   const r = 10; // roller radius
-  const L = 262; // drawn center distance
-  const x0 = 38;
+  const L = 250; // drawn center distance
+  const x0 = 34;
   const raw = opts.angleDeg ?? 15;
   const ang = Math.min(70, Math.max(4, raw));
   const rad = (ang * Math.PI) / 180;

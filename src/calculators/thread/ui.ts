@@ -130,6 +130,7 @@ export async function mountThread(ctx: AppContext, params: URLSearchParams): Pro
 
     parts.push(
       segmented<ThreadSystem>({
+        extraClass: `seg-system seg-${form.system}`,
         ariaLabel: 'Thread system',
         value: form.system,
         options: [
@@ -274,6 +275,9 @@ export async function mountThread(ctx: AppContext, params: URLSearchParams): Pro
         form.sizeLabel = COARSE_METRIC.some((m) => m.d === p.major) ? `M${p.major}` : 'other';
         form.majorText = String(p.major);
         form.pitchText = String(p.pitch);
+      }
+      if (p.classLabel && (classOptions() as readonly string[]).map((c) => c.toLowerCase()).includes(p.classLabel.toLowerCase())) {
+        form.classLabel = (classOptions() as readonly string[]).find((c) => c.toLowerCase() === p.classLabel!.toLowerCase())!;
       }
       invalidate();
       build();

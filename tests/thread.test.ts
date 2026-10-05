@@ -268,3 +268,13 @@ describe('designation parsing', () => {
     expect(parseUnifiedSize('#99')).toBeNull();
   });
 });
+
+describe('designation parsing with class', () => {
+  it('reads trailing class', () => {
+    expect(parseDesignation('1/2-20 UNF-2A')).toMatchObject({ system: 'unified', major: 0.5, tpi: 20, classLabel: '2A' });
+    expect(parseDesignation('3/8-16 UNC 2B')).toMatchObject({ tpi: 16, classLabel: '2B' });
+    expect(parseDesignation('M12 x 1.5-6g')).toMatchObject({ system: 'metric', major: 12, pitch: 1.5, classLabel: '6g' });
+    expect(parseDesignation('M10x1.5 6H')).toMatchObject({ major: 10, pitch: 1.5, classLabel: '6H' });
+    expect(parseDesignation('M10x1.5')?.classLabel).toBeUndefined();
+  });
+});

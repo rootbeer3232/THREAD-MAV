@@ -19,21 +19,23 @@ export function createActionBar(opts: {
   let record: CalcRecord | null = null;
   const getRecord = () => record;
   const indicators = h('div', { class: 'indicators' });
-  const saveBtn = h('button', { class: 'btn btn-action', type: 'button' });
-  const favBtn = h('button', { class: 'btn btn-action', type: 'button' });
-  const noteBtn = h('button', { class: 'btn btn-action', type: 'button' });
-  const shareBtn = h('button', { class: 'btn btn-action', type: 'button' }, icon('share', 22), h('span', null, 'SHARE'));
-  const newBtn = h('button', { class: 'btn btn-secondary btn-wide', type: 'button' }, 'NEW CALC');
-  const el = h('div', { class: 'action-bar' }, indicators, h('div', { class: 'action-grid' }, saveBtn, favBtn, noteBtn, shareBtn), newBtn);
+  const saveBtn = h('button', { class: 'btn btn-primary btn-save', type: 'button' });
+  const newBtn = h('button', { class: 'btn btn-secondary', type: 'button' }, 'NEW CALC');
+  const favBtn = h('button', { class: 'btn btn-action act-fav', type: 'button' });
+  const noteBtn = h('button', { class: 'btn btn-action act-note', type: 'button' });
+  const shareBtn = h('button', { class: 'btn btn-action act-share', type: 'button' });
+  const act = (ic: 'star' | 'note' | 'share', title: string, sub: string) => [icon(ic, 26), h('span', { class: 'act-t' }, title), h('small', { class: 'act-s' }, sub)];
+  shareBtn.replaceChildren(...act('share', 'SHARE / EXPORT', 'SEND OR COPY'));
+  const el = h('div', { class: 'action-bar' }, h('div', { class: 'btn-row' }, newBtn, saveBtn), h('div', { class: 'action-grid' }, favBtn, noteBtn, shareBtn), indicators);
 
   const refresh = () => {
     const rec = getRecord();
-    saveBtn.replaceChildren(icon(rec?.saved ? 'check' : 'saved', 22), h('span', null, rec?.saved ? 'SAVED' : 'SAVE'));
+    saveBtn.replaceChildren(rec?.saved ? '✓ SAVED' : 'SAVE');
     saveBtn.classList.toggle('on-saved', !!rec?.saved);
-    favBtn.replaceChildren(icon('star', 22), h('span', null, 'FAVORITE'));
+    favBtn.replaceChildren(...act('star', 'FAVORITE', rec?.favorite ? 'SAVED ★' : 'PIN THIS ONE'));
     favBtn.classList.toggle('on-fav', !!rec?.favorite);
     favBtn.setAttribute('aria-pressed', String(!!rec?.favorite));
-    noteBtn.replaceChildren(icon('note', 22), h('span', null, 'NOTES'));
+    noteBtn.replaceChildren(...act('note', rec?.note ? 'NOTES • SAVED' : 'NOTES', rec?.note ? 'TAP TO EDIT' : 'TAP TO ADD'));
     noteBtn.classList.toggle('on-note', !!rec?.note);
     indicators.replaceChildren(...(rec?.note ? [noteIndicator()] : []), ...(rec?.favorite ? [favIndicator()] : []));
     if (rec?.note) indicators.append(h('div', { class: 'note-preview' }, rec.note));

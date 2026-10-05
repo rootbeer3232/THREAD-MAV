@@ -99,9 +99,10 @@ export function segmented<T extends string>(opts: {
   value: T;
   onChange(v: T): void;
   tone?: 'blue' | 'neutral';
+  extraClass?: string;
   ariaLabel: string;
 }): HTMLElement {
-  const root = h('div', { class: `segmented ${opts.tone === 'neutral' ? 'seg-neutral' : ''}`, role: 'group', 'aria-label': opts.ariaLabel });
+  const root = h('div', { class: `segmented ${opts.tone === 'neutral' ? 'seg-neutral' : ''} ${opts.extraClass ?? ''}`, role: 'group', 'aria-label': opts.ariaLabel });
   for (const o of opts.options) {
     root.append(
       h(
@@ -174,24 +175,36 @@ export function favIndicator(): HTMLElement {
 
 /* ---------- results rendering ---------- */
 
-export function renderRow(r: ResultRow, o: FormatOptions): HTMLElement {
-  const row = h('div', { class: `res-row res-${r.size}` });
-  const label = h('div', { class: 'res-label' }, r.label, r.tag ? badge(r.tag) : null);
-  const vals = h('div', { class: 'res-values' });
+const fixedDual = (r: ResultRow, o: FormatOptions) => fmtDual(r.dual!, o, r.extraDecimals ?? 0);
+
+function heroCard(r: ResultRow, o: FormatOptions): HTMLElement {
+  const card = h('div', { class: 'hero-card' }, h('div', { class: 'hero-cap' }, r.label, r.tag ? badge(r.tag) : null));
   if (r.dual) {
-    const t = fmtDual(r.dual, o, r.extraDecimals ?? 0);
-    const inch = h('div', { class: 'val val-in' }, h('span', { class: 'num' }, t.inch), h('span', { class: 'u' }, ' in'));
-    const mm = h('div', { class: 'val val-mm' }, h('span', { class: 'num' }, t.mm), h('span', { class: 'u' }, ' mm'));
-    const first = r.dual.primary === 'in' ? inch : mm;
-    const second = r.dual.primary === 'in' ? mm : inch;
-    first.classList.add('val-primary');
-    second.classList.add('val-alt');
-    vals.append(first, h('div', { class: 'paren' }, '(', second, ')'));
+    const t = fixedDual(r, o);
+    card.append(
+      h(
+        'div',
+        { class: 'hero-boxes' },
+        h('div', { class: `hero-box hero-in ${r.dual.primary === 'in' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, 'INCHES'), h('div', { class: 'hero-num' }, t.inch, h('span', null, '"'))),
+        h('div', { class: `hero-box hero-mm ${r.dual.primary === 'mm' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, 'MILLIMETERS'), h('div', { class: 'hero-num' }, t.mm, h('span', null, ' mm'))),
+      ),
+    );
   } else {
-    vals.append(h('div', { class: 'val val-plain val-primary' }, h('span', { class: 'num' }, r.text ?? '')));
-    if (r.altText) vals.append(h('div', { class: 'val val-plain val-alt' }, r.altText));
+    card.append(h('div', { class: 'hero-boxes single' }, h('div', { class: 'hero-box hero-plain' }, h('div', { class: 'hero-num' }, r.text ?? ''), r.altText ? h('div', { class: 'hero-alt' }, r.altText) : null)));
   }
-  row.append(label, vals);
+  if (r.hint) card.append(h('div', { class: 'res-hint' }, r.hint));
+  return card;
+}
+
+export function renderRow(r: ResultRow, o: FormatOptions): HTMLElement {
+  const row = h('div', { class: 'res-row' });
+  row.append(h('div', { class: 'res-label' }, h('span', null, r.label), r.tag ? badge(r.tag) : null));
+  if (r.dual) {
+    const t = fixedDual(r, o);
+    row.append(h('div', { class: 'cell cell-in' }, t.inch), h('div', { class: 'cell cell-mm' }, t.mm));
+  } else {
+    row.append(h('div', { class: 'cell cell-plain' }, h('div', null, r.text ?? ''), r.altText ? h('div', { class: 'cell-alt' }, r.altText) : null));
+  }
   if (r.hint) row.append(h('div', { class: 'res-hint' }, r.hint));
   return row;
 }
@@ -199,13 +212,28 @@ export function renderRow(r: ResultRow, o: FormatOptions): HTMLElement {
 export function renderPresentation(p: Presentation, o: FormatOptions): HTMLElement {
   const root = h('div', { class: 'results' });
   root.append(
+    h('div', { class: 'banner-ok', role: 'status' }, icon('check', 20), h('span', null, 'Calculation Complete')),
     h('div', { class: 'res-head' }, h('div', { class: 'res-title' }, p.title), h('div', { class: 'res-sub' }, p.subtitle)),
   );
   if (p.badges.length) root.append(h('div', { class: 'badges' }, ...p.badges.map(badge)));
   for (const sec of p.sections) {
-    const card = h('section', { class: 'card res-card' });
-    if (sec.title) card.append(h('h3', { class: 'card-title' }, sec.title));
-    for (const r of sec.rows) card.append(renderRow(r, o));
+    const heroes = sec.rows.filter((r) => r.size === 'hero');
+    const rest = sec.rows.filter((r) => r.size !== 'hero');
+    const hasDual = rest.some((r) => r.dual);
+    const card = h('section', { class: `card res-card ${hasDual ? '' : 'no-cols'}` });
+    if (sec.title || hasDual) {
+      card.append(
+        h(
+          'div',
+          { class: 'sec-head' },
+          h('h3', { class: 'card-title' }, sec.title ?? ''),
+          hasDual ? h('span', { class: 'col-h col-in' }, 'in', h('small', null, 'STANDARD')) : null,
+          hasDual ? h('span', { class: 'col-h col-mm' }, 'mm', h('small', null, 'METRIC')) : null,
+        ),
+      );
+    }
+    for (const r of heroes) card.append(heroCard(r, o));
+    for (const r of rest) card.append(renderRow(r, o));
     root.append(card);
   }
   for (const m of p.messages) root.append(h('div', { class: `msg msg-${m.tone}`, role: 'note' }, m.text));

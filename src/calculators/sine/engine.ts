@@ -107,3 +107,15 @@ export function angleFromDms(d: number, m: number, s: number): Result<number> {
   if (issues.length) return failMany(issues);
   return ok(dmsToDeg(d, m, s));
 }
+
+/**
+ * One-row angle entry: degrees (decimal allowed) plus optional minutes and seconds.
+ * "15.5 0 0" = 15.5°. "15 30 36" = 15°30′36″. Decimal degrees combined with
+ * minutes/seconds is ambiguous, so it is rejected rather than guessed.
+ */
+export function angleFromParts(d: number, m: number, s: number): Result<number> {
+  if (![d, m, s].every(Number.isFinite)) return fail('Enter the angle.', 'angle');
+  if (d < 0 || m < 0 || s < 0) return fail('The angle can’t be negative.', 'angle');
+  if (m === 0 && s === 0) return ok(d);
+  return angleFromDms(d, m, s);
+}

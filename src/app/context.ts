@@ -23,5 +23,6 @@ export interface ScreenDef {
   tab: 'home' | 'calcs' | 'saved' | 'history' | 'settings';
   /** Show a back button to this route. */
   back?: string;
+  backLabel?: string;
   render(ctx: AppContext, params: URLSearchParams): Screen | Promise<Screen>;
 }

@@ -109,6 +109,8 @@ export interface ParsedDesignation {
   /** metric pitch (mm) or unified pitch derived (inch) */
   pitch: number;
   sizeLabel: string;
+  /** Class typed with the designation, e.g. "2A" / "6g" (optional). */
+  classLabel?: string;
 }
 
 /**
@@ -118,12 +120,24 @@ export interface ParsedDesignation {
 export function parseDesignation(raw: string): ParsedDesignation | null {
   let t = raw.trim().toUpperCase().replace(/×/g, 'X').replace(/\s+/g, ' ');
   if (!t) return null;
+  let typedClass: string | undefined;
+  const mClass = /^(M.*?)[-\s]+(\d[GHEF])$/.exec(t);
+  if (mClass) {
+    t = mClass[1]!.trim();
+    const raw = mClass[2]!;
+    typedClass = raw.slice(0, 1) + (raw.slice(1) === 'H' ? 'H' : raw.slice(1).toLowerCase());
+  }
+  const uClass = !t.startsWith('M') ? /[-\s]+([123][AB])$/.exec(t) : null;
+  if (uClass) {
+    typedClass = uClass[1]!;
+    t = t.slice(0, uClass.index).trim();
+  }
   const metric = /^M\s*(\d+\.?\d*|\.\d+)\s*(?:X\s*(\d+\.?\d*|\.\d+))?/.exec(t);
   if (metric) {
     const d = Number(metric[1]);
     const pitch = metric[2] !== undefined ? Number(metric[2]) : coarseMetricPitch(d);
     if (!(d > 0) || pitch === undefined || !(pitch > 0)) return null;
-    return { system: 'metric', major: d, pitch, sizeLabel: `M${trimNum(d)}` };
+    return { system: 'metric', major: d, pitch, sizeLabel: `M${trimNum(d)}`, ...(typedClass ? { classLabel: typedClass } : {}) };
   }
   t = t.replace(/\b(UNC|UNF|UNEF|UN|UNS|NC|NF)\b/g, '').replace(/[-\s]*$/, '').trim();
   // split at the LAST '-' : size on the left, TPI on the right
@@ -135,7 +149,7 @@ export function parseDesignation(raw: string): ParsedDesignation | null {
   const tpi = Number(tpiPart);
   const size = parseUnifiedSize(sizePart);
   if (!size || !(tpi > 0)) return null;
-  return { system: 'unified', major: size.major, tpi, pitch: 1 / tpi, sizeLabel: size.label };
+  return { system: 'unified', major: size.major, tpi, pitch: 1 / tpi, sizeLabel: size.label, ...(typedClass ? { classLabel: typedClass } : {}) };
 }
 
 function trimNum(n: number): string {
