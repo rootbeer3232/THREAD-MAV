@@ -1,0 +1,22 @@
+{
+  "name": "thread-mav",
+  "version": "1.0.0-test.1",
+  "private": true,
+  "description": "Thread Mav — machinist shop-floor calculators (offline-first PWA)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3"
+  }
+}
