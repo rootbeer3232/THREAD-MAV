@@ -1794,3 +1794,155 @@
 .no-cols .sec-head {
   display: block;
 }
+
+/* ---------- charts ---------- */
+.quick-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.charts .chart-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.chart-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chart-note {
+  padding: 4px 2px 12px;
+}
+.chart-card {
+  padding: 0;
+  overflow: hidden;
+}
+.chart-card.open {
+  border-color: var(--blue);
+}
+.chart-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  background: none;
+  border: 0;
+  color: var(--text);
+  text-align: left;
+  min-height: 64px;
+}
+.ch-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.ch-title {
+  font-size: 20px;
+  font-weight: 900;
+  overflow-wrap: anywhere;
+}
+.ch-sub {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  font-weight: 700;
+}
+.ch-vals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 800;
+  font-size: 15px;
+  flex: none;
+}
+.chart-detail {
+  padding: 0 14px 14px;
+  display: flex;
+  flex-direction: column;
+}
+.sub-title {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: var(--green);
+}
+.strong-row .drill-name,
+.drill-name {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text);
+}
+.res-row .pct {
+  margin-top: 0;
+  color: var(--green);
+  font-weight: 800;
+}
+.pct-box {
+  margin: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pct-out {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--green);
+}
+.drill-head,
+.drill-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+}
+.drill-head:has(span:nth-child(4)),
+.drill-row:has(.dr-diff) {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 0.9fr);
+}
+.drill-head {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--text-dim);
+  padding: 4px 12px;
+  text-align: right;
+}
+.drill-head span:first-child {
+  text-align: left;
+}
+.drill-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  min-height: 56px;
+}
+.dr-name {
+  display: flex;
+  flex-direction: column;
+}
+.dr-name strong {
+  font-size: 20px;
+}
+.dr-name small {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.dr-diff {
+  text-align: right;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+input[type='search'].text-input {
+  -webkit-appearance: none;
+  appearance: none;
+  height: var(--tap);
+  width: 100%;
+}
+.chart-controls input[type='search']::-webkit-search-cancel-button {
+  display: none;
+}
