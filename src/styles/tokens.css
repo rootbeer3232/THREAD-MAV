@@ -1,0 +1,42 @@
+/* Thread Mav design tokens — dark industrial. Colour carries meaning:
+   blue = inch / primary, red = metric, green = calculate / verified,
+   pink = note, yellow = favorite, orange = warning. */
+:root {
+  color-scheme: dark;
+
+  --bg: #07090b;
+  --surface: #12161b;
+  --surface-2: #1a2027;
+  --surface-3: #262f39;
+  --border: #35404c;
+  --border-strong: #55636f;
+
+  --text: #f6f8fa;
+  --text-dim: #b9c3ce;
+
+  --blue: #52a8ff;
+  --blue-strong: #1d78e6;
+  --red: #ff6e6e;
+  --green: #2fd36b;
+  --green-ink: #03200e;
+  --pink: #ff62b3;
+  --yellow: #ffd43b;
+  --orange: #ffa94d;
+  --violet: #bda6ff;
+  --teal: #4fdccd;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --tap: 56px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  --header-h: 56px;
+  --tabbar-h: 62px;
+
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
