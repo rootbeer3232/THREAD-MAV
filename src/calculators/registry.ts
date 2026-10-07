@@ -35,7 +35,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   planned('thread-depth', 'Thread Depth / Compound Infeed', 'Lathe threading infeed helper', 'threads'),
   { id: 'sine', name: 'Sine Bar', blurb: 'Find stack height or angle. 5.000" preset or custom bar.', category: 'angles', status: 'ready', route: 'sine' },
   planned('taper', 'Taper', 'Diameters, length, taper per inch/foot, angles', 'angles'),
-  planned('triangle', 'Triangle Solver', 'Right-triangle shop trig', 'angles'),
+  { id: 'triangle', name: 'Right Triangle', blurb: 'Any two knowns → rise, run, hypotenuse, angle.', category: 'angles', status: 'ready', route: 'triangle' },
   planned('bolt-circle', 'Bolt Circle', 'X/Y coordinates for each hole', 'holes'),
   planned('drill-point', 'Drill Point Depth', 'Extra depth from drill point angle', 'holes'),
   planned('csk-cbore', 'Countersink / Counterbore', 'Diameters, angle, depth', 'holes'),
@@ -44,8 +44,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   planned('rcs', 'Radius / Chord / Sagitta', 'Arc geometry', 'geometry'),
   planned('ball-pin', 'Ball / Pin Measurement', 'Measurement over ball/pin', 'geometry'),
   planned('shim', 'Shim / Spacer Stack', 'Practical shim combinations', 'geometry'),
-  planned('feeds-speeds', 'Feeds & Speeds', 'RPM, IPM, chip load', 'cutting'),
-  planned('sfm', 'Surface Speed', 'SFM / m/min / RPM / diameter', 'cutting'),
+  { id: 'speeds', name: 'Speeds & Feeds', blurb: 'Milling, turning, drilling: RPM, feed rate, SFM ↔ m/min.', category: 'cutting', status: 'ready', route: 'speeds' },
 ];
 
 export const READY = CALCULATORS.filter((c) => c.status === 'ready');

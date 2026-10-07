@@ -20,11 +20,19 @@ export interface ResultRow {
   altText?: string;
   tag?: Tag;
   hint?: string;
+  /** Override the inch/metric decimals for non-length pairs (e.g. SFM | m/min). */
+  fmt?: { a: number; b: number };
+  /** Unit symbols for the two values when they are not in / mm. */
+  syms?: [string, string];
+  /** Hero box captions when not INCHES / MILLIMETERS. */
+  heroCaps?: [string, string];
   size: 'hero' | 'normal' | 'sub';
 }
 
 export interface ResultSection {
   title?: string;
+  /** Column headers when the two values are not in / mm. */
+  cols?: [{ t: string; s: string }, { t: string; s: string }];
   rows: ResultRow[];
 }
 

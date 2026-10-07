@@ -1,4 +1,4 @@
-import { sanitizeDecimalInput } from '../core/numeric';
+import { fmtFixed, sanitizeDecimalInput } from '../core/numeric';
 import type { Presentation, ResultRow, Tag } from '../core/results';
 import { type FormatOptions, fmtDual } from '../core/format';
 import { h, icon } from './dom';
@@ -175,7 +175,8 @@ export function favIndicator(): HTMLElement {
 
 /* ---------- results rendering ---------- */
 
-const fixedDual = (r: ResultRow, o: FormatOptions) => fmtDual(r.dual!, o, r.extraDecimals ?? 0);
+const fixedDual = (r: ResultRow, o: FormatOptions) =>
+  r.fmt ? { inch: fmtFixed(r.dual!.in, r.fmt.a), mm: fmtFixed(r.dual!.mm, r.fmt.b), primary: r.dual!.primary } : fmtDual(r.dual!, o, r.extraDecimals ?? 0);
 
 function heroCard(r: ResultRow, o: FormatOptions): HTMLElement {
   const card = h('div', { class: 'hero-card' }, h('div', { class: 'hero-cap' }, r.label, r.tag ? badge(r.tag) : null));
@@ -185,8 +186,8 @@ function heroCard(r: ResultRow, o: FormatOptions): HTMLElement {
       h(
         'div',
         { class: 'hero-boxes' },
-        h('div', { class: `hero-box hero-in ${r.dual.primary === 'in' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, 'INCHES'), h('div', { class: 'hero-num' }, t.inch, h('span', null, '"'))),
-        h('div', { class: `hero-box hero-mm ${r.dual.primary === 'mm' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, 'MILLIMETERS'), h('div', { class: 'hero-num' }, t.mm, h('span', null, ' mm'))),
+        h('div', { class: `hero-box hero-in ${r.dual.primary === 'in' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, r.heroCaps?.[0] ?? 'INCHES'), h('div', { class: 'hero-num' }, t.inch, h('span', null, r.syms?.[0] ?? '"'))),
+        h('div', { class: `hero-box hero-mm ${r.dual.primary === 'mm' ? 'is-primary' : ''}` }, h('div', { class: 'hero-unit' }, r.heroCaps?.[1] ?? 'MILLIMETERS'), h('div', { class: 'hero-num' }, t.mm, h('span', null, r.syms?.[1] ?? ' mm'))),
       ),
     );
   } else {
@@ -227,8 +228,8 @@ export function renderPresentation(p: Presentation, o: FormatOptions): HTMLEleme
           'div',
           { class: 'sec-head' },
           h('h3', { class: 'card-title' }, sec.title ?? ''),
-          hasDual ? h('span', { class: 'col-h col-in' }, 'in', h('small', null, 'STANDARD')) : null,
-          hasDual ? h('span', { class: 'col-h col-mm' }, 'mm', h('small', null, 'METRIC')) : null,
+          hasDual ? h('span', { class: 'col-h col-in' }, sec.cols?.[0].t ?? 'in', h('small', null, sec.cols?.[0].s ?? 'STANDARD')) : null,
+          hasDual ? h('span', { class: 'col-h col-mm' }, sec.cols?.[1].t ?? 'mm', h('small', null, sec.cols?.[1].s ?? 'METRIC')) : null,
         ),
       );
     }
