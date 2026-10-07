@@ -3,6 +3,8 @@ import './styles/base.css';
 import './styles/components.css';
 import { mountSine } from './calculators/sine/ui';
 import { mountThread } from './calculators/thread/ui';
+import { mountSpeeds } from './calculators/speeds/ui';
+import { mountTriangle } from './calculators/triangle/ui';
 import { DEFAULT_SETTINGS, type Settings } from './core/settings-model';
 import type { AppContext, Screen, ScreenDef } from './app/context';
 import { buildHash, parseHash } from './app/router';
@@ -47,6 +49,8 @@ async function boot() {
     { route: 'calcs', title: 'Calculators', tab: 'calcs', render: (c) => calculatorsScreen(c) },
     { route: 'thread', title: 'Thread / 3-Wire', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountThread(c, p) },
     { route: 'sine', title: 'Sine Bar Calculator', tab: 'calcs', back: 'calcs', backLabel: 'Calculators', render: (c, p) => mountSine(c, p) },
+    { route: 'speeds', title: 'Speeds & Feeds', tab: 'calcs', back: 'calcs', render: (c, p) => mountSpeeds(c, p) },
+    { route: 'triangle', title: 'Right Triangle', tab: 'calcs', back: 'calcs', render: (c, p) => mountTriangle(c, p) },
     { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
     { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },

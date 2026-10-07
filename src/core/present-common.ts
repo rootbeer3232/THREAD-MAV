@@ -1,9 +1,15 @@
 import { type FormatOptions, fmtDual } from './format';
+import { fmtFixed } from './numeric';
 import type { Presentation, ResultRow } from './results';
 import type { SummaryLine } from '../storage/types';
 
 /** One-line text for a row, e.g. "0.3344 in  (8.4938 mm)". */
 export function rowText(r: ResultRow, o: FormatOptions): { value: string; alt?: string } {
+  if (r.dual && r.fmt) {
+    const a = `${fmtFixed(r.dual.in, r.fmt.a)} ${r.syms?.[0] ?? ''}`.trim();
+    const b = `${fmtFixed(r.dual.mm, r.fmt.b)} ${r.syms?.[1] ?? ''}`.trim();
+    return r.dual.primary === 'in' ? { value: a, alt: b } : { value: b, alt: a };
+  }
   if (r.dual) {
     const t = fmtDual(r.dual, o, r.extraDecimals ?? 0);
     return r.dual.primary === 'in'

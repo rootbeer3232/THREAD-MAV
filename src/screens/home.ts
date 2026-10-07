@@ -134,7 +134,18 @@ export function homeScreen(ctx: AppContext): Screen {
   root.append(h('div', { class: 'home-tagline' }, 'THREAD ANSWERS. BOTH SYSTEMS. NO CONVERSIONS.'), card);
 
   root.append(
-    h('button', { class: 'tile-sine', type: 'button', on: { click: () => ctx.go('sine') } }, icon('calc', 26), h('span', null, h('strong', null, 'SINE BAR CALCULATOR'), h('small', null, '5.000" preset · stack height or angle')), icon('chevron', 24)),
+    h(
+      'section',
+      { class: 'card' },
+      h('div', { class: 'section-head' }, h('h2', { class: 'card-title blue-title' }, 'CALCULATORS'), h('button', { class: 'link-btn', type: 'button', on: { click: () => ctx.go('calcs') } }, 'ALL ›')),
+      h(
+        'div',
+        { class: 'quick-grid' },
+        qa('SINE BAR', 'calc', () => ctx.go('sine')),
+        qa('SPEEDS & FEEDS', 'calc', () => ctx.go('speeds')),
+        qa('RIGHT TRIANGLE', 'calc', () => ctx.go('triangle')),
+      ),
+    ),
     h(
       'section',
       { class: 'card' },
