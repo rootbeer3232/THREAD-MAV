@@ -24,6 +24,8 @@ export interface ResultRow {
   fmt?: { a: number; b: number };
   /** Unit symbols for the two values when they are not in / mm. */
   syms?: [string, string];
+  /** A coordinate pair, shown as hole / X / Y with both unit systems. */
+  xy?: { angle: string; x: DualLength; y: DualLength };
   /** Hero box captions when not INCHES / MILLIMETERS. */
   heroCaps?: [string, string];
   size: 'hero' | 'normal' | 'sub';

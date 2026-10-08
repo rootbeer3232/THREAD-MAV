@@ -144,6 +144,8 @@ export function homeScreen(ctx: AppContext): Screen {
         qa('SINE BAR', 'calc', () => ctx.go('sine')),
         qa('SPEEDS & FEEDS', 'calc', () => ctx.go('speeds')),
         qa('RIGHT TRIANGLE', 'calc', () => ctx.go('triangle')),
+        qa('BOLT CIRCLE', 'calc', () => ctx.go('boltcircle')),
+        qa('CSK / CBORE', 'calc', () => ctx.go('cskcbore')),
       ),
     ),
     h(

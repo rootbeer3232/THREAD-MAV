@@ -22,6 +22,8 @@ export function numericField(opts: {
   value?: string;
   placeholder?: string;
   hint?: string;
+  /** Allow a leading minus (iOS decimal pad has no minus key, so a ± button is shown). */
+  signed?: boolean;
   onInput?: (v: string) => void;
   onEnter?: () => void;
 }): NumericField {
@@ -40,17 +42,18 @@ export function numericField(opts: {
   });
   input.value = opts.value ?? '';
   const unitEl = h('span', { class: 'unit-chip' }, opts.unit ?? '');
+  const signBtn = opts.signed ? h('button', { class: 'sign-btn', type: 'button', 'aria-label': `Toggle minus for ${opts.label}`, tabindex: '-1' }, '±') : null;
   const clearBtn = h('button', { class: 'clear-x', type: 'button', 'aria-label': `Clear ${opts.label}`, tabindex: '-1' }, '×');
   const err = h('div', { id: `e-${opts.id}`, class: 'field-error', role: 'alert' });
   const labelEl = h('label', { for: `f-${opts.id}`, class: 'field-label' }, opts.label);
-  const wrap = h('div', { class: 'field' }, labelEl, h('div', { class: 'input-row' }, input, clearBtn, unitEl), opts.hint ? h('div', { class: 'field-hint' }, opts.hint) : null, err);
+  const wrap = h('div', { class: 'field' }, labelEl, h('div', { class: 'input-row' }, input, signBtn, clearBtn, unitEl), opts.hint ? h('div', { class: 'field-hint' }, opts.hint) : null, err);
 
   const sync = () => {
     clearBtn.style.visibility = input.value ? 'visible' : 'hidden';
     unitEl.style.display = unitEl.textContent ? '' : 'none';
   };
   input.addEventListener('input', () => {
-    const clean = sanitizeDecimalInput(input.value);
+    const clean = sanitizeDecimalInput(input.value, !!opts.signed);
     if (clean !== input.value) input.value = clean;
     err.textContent = '';
     wrap.classList.remove('has-error');
@@ -62,6 +65,13 @@ export function numericField(opts: {
       input.blur();
       opts.onEnter?.();
     }
+  });
+  signBtn?.addEventListener('click', () => {
+    const v = input.value;
+    input.value = v.startsWith('-') ? v.slice(1) : v === '' ? '-' : `-${v}`;
+    sync();
+    opts.onInput?.(input.value);
+    input.focus();
   });
   clearBtn.addEventListener('click', () => {
     input.value = '';
@@ -197,7 +207,17 @@ function heroCard(r: ResultRow, o: FormatOptions): HTMLElement {
   return card;
 }
 
+function xyRow(r: ResultRow, o: FormatOptions): HTMLElement {
+  const xy = r.xy!;
+  const cell = (d: typeof xy.x) => {
+    const t = fmtDual(d, o);
+    return h('div', { class: 'xy-cell' }, h('div', { class: 'cell-in' }, t.inch), h('div', { class: 'cell-mm' }, t.mm));
+  };
+  return h('div', { class: 'xy-row' }, h('div', { class: 'xy-id' }, h('strong', null, r.label), h('small', null, xy.angle)), cell(xy.x), cell(xy.y));
+}
+
 export function renderRow(r: ResultRow, o: FormatOptions): HTMLElement {
+  if (r.xy) return xyRow(r, o);
   const row = h('div', { class: 'res-row' });
   row.append(h('div', { class: 'res-label' }, h('span', null, r.label), r.tag ? badge(r.tag) : null));
   if (r.dual) {
@@ -221,8 +241,11 @@ export function renderPresentation(p: Presentation, o: FormatOptions): HTMLEleme
     const heroes = sec.rows.filter((r) => r.size === 'hero');
     const rest = sec.rows.filter((r) => r.size !== 'hero');
     const hasDual = rest.some((r) => r.dual);
+    const hasXy = rest.some((r) => r.xy);
     const card = h('section', { class: `card res-card ${hasDual ? '' : 'no-cols'}` });
-    if (sec.title || hasDual) {
+    if (hasXy) {
+      card.append(h('div', { class: 'xy-head' }, h('h3', { class: 'card-title' }, sec.title ?? ''), h('span', { class: 'col-h' }, 'X'), h('span', { class: 'col-h' }, 'Y')), h('div', { class: 'xy-sub' }, h('span', { class: 'col-in' }, 'in'), ' above ', h('span', { class: 'col-mm' }, 'mm')));
+    } else if (sec.title || hasDual) {
       card.append(
         h(
           'div',
