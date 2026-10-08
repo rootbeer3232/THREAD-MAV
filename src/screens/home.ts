@@ -146,6 +146,9 @@ export function homeScreen(ctx: AppContext): Screen {
         qa('RIGHT TRIANGLE', 'calc', () => ctx.go('triangle')),
         qa('BOLT CIRCLE', 'calc', () => ctx.go('boltcircle')),
         qa('CSK / CBORE', 'calc', () => ctx.go('cskcbore')),
+        qa('TAPER', 'calc', () => ctx.go('taper')),
+        qa('DRILL POINT', 'calc', () => ctx.go('drillpoint')),
+        qa('ALL TOOLS', 'calc', () => ctx.go('calcs')),
       ),
     ),
     h(

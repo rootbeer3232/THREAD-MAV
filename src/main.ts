@@ -6,6 +6,8 @@ import { mountThread } from './calculators/thread/ui';
 import { mountSpeeds } from './calculators/speeds/ui';
 import { mountTriangle } from './calculators/triangle/ui';
 import { mountBoltCircle } from './calculators/boltcircle/ui';
+import { mountTaper } from './calculators/taper/ui';
+import { mountDrillPoint } from './calculators/drillpoint/ui';
 import { mountCskCbore } from './calculators/cskcbore/ui';
 import { DEFAULT_SETTINGS, type Settings } from './core/settings-model';
 import type { AppContext, Screen, ScreenDef } from './app/context';
@@ -55,6 +57,8 @@ async function boot() {
     { route: 'triangle', title: 'Right Triangle', tab: 'calcs', back: 'calcs', render: (c, p) => mountTriangle(c, p) },
     { route: 'boltcircle', title: 'Bolt Circle', tab: 'calcs', back: 'calcs', render: (c, p) => mountBoltCircle(c, p) },
     { route: 'cskcbore', title: 'Countersink / Counterbore', tab: 'calcs', back: 'calcs', render: (c, p) => mountCskCbore(c, p) },
+    { route: 'taper', title: 'Taper', tab: 'calcs', back: 'calcs', render: (c, p) => mountTaper(c, p) },
+    { route: 'drillpoint', title: 'Drill Point Depth', tab: 'calcs', back: 'calcs', render: (c, p) => mountDrillPoint(c, p) },
     { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
     { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },

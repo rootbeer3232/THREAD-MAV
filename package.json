@@ -1,6 +1,6 @@
 {
   "name": "thread-mav",
-  "version": "1.2.0-test.1",
+  "version": "1.3.0-test.1",
   "private": true,
   "description": "Thread Mav — machinist shop-floor calculators (offline-first PWA)",
   "type": "module",
