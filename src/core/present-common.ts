@@ -5,6 +5,12 @@ import type { SummaryLine } from '../storage/types';
 
 /** One-line text for a row, e.g. "0.3344 in  (8.4938 mm)". */
 export function rowText(r: ResultRow, o: FormatOptions): { value: string; alt?: string } {
+  if (r.xy) {
+    const x = fmtDual(r.xy.x, o);
+    const y = fmtDual(r.xy.y, o);
+    const p = r.xy.x.primary === 'in';
+    return { value: p ? `X ${x.inch}  Y ${y.inch} in` : `X ${x.mm}  Y ${y.mm} mm`, alt: p ? `X ${x.mm}  Y ${y.mm} mm` : `X ${x.inch}  Y ${y.inch} in` };
+  }
   if (r.dual && r.fmt) {
     const a = `${fmtFixed(r.dual.in, r.fmt.a)} ${r.syms?.[0] ?? ''}`.trim();
     const b = `${fmtFixed(r.dual.mm, r.fmt.b)} ${r.syms?.[1] ?? ''}`.trim();
