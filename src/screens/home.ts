@@ -148,6 +148,8 @@ export function homeScreen(ctx: AppContext): Screen {
         qa('CSK / CBORE', 'calc', () => ctx.go('cskcbore')),
         qa('TAPER', 'calc', () => ctx.go('taper')),
         qa('DRILL POINT', 'calc', () => ctx.go('drillpoint')),
+        qa('CHAMFER', 'calc', () => ctx.go('chamfer')),
+        qa('RADIUS / CHORD', 'calc', () => ctx.go('arc')),
         qa('ALL TOOLS', 'calc', () => ctx.go('calcs')),
       ),
     ),
