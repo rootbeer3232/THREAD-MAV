@@ -10,7 +10,7 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     .filter((m) => m.level !== 'info')
     .map((m) => ({ tone: m.level === 'red' ? ('warn' as const) : ('warn' as const), text: m.level === 'red' ? `STOP — ${m.text}` : m.text }));
   const info: Presentation['messages'] = [
-    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps, shoulders and tapers so far — radii are coming.' },
+    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps, shoulders, tapers and corner radii. Dimensions are to the sharp corner; arc points are the tangent points. No G-code yet.' },
   ];
 
   const level = sol.status;
@@ -70,6 +70,21 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     ];
   });
 
+  const arcRows: ResultRow[] = sol.points.flatMap((p, i): ResultRow[] => {
+    const a = p.arc;
+    if (!a) return [];
+    const head = `P${i + 1}  R`;
+    const xy = (label: string, q: { x: number; z: number }, angle: string): ResultRow => ({ label: `${head} ${label}`, size: 'normal', xy: { angle, x: dual(q.x), y: dual(q.z) } });
+    return [
+      { label: `${head} — radius`, dual: dual(a.radius), size: 'normal' },
+      { label: `${head} — tangent length from corner`, dual: dual(a.tangentLength), size: 'normal' },
+      xy('arc start', a.start, 'tangent point'),
+      xy('arc end', a.end, 'tangent point'),
+      xy('arc center', a.center, 'center'),
+      { label: `${head} — shape`, text: `${a.convex ? 'Convex (rounded outside)' : 'Concave (fillet)'} · ${a.sweepDeg.toFixed(2)}° · ${a.turn === 'ccw' ? 'CCW' : 'CW'} in the X-Z view`, size: 'normal' },
+    ];
+  });
+
   return {
     title: `Contour IQ — ${side.toUpperCase()}`,
     subtitle: `${sol.points.length} points · ${sol.segments.length} segments · X diameter, Z from P0`,
@@ -78,6 +93,7 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     sections: [
       { title: 'Coordinates', xyCols: ['X (dia)', 'Z'], rows },
       { title: 'Segments', rows: segRows },
+      ...(arcRows.length ? [{ title: 'Radius corners', xyCols: ['X (dia)', 'Z'] as [string, string], rows: arcRows }] : []),
     ],
     messages: [...msgs, ...info],
   };
