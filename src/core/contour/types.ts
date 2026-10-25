@@ -126,11 +126,19 @@ export interface ContourMessage {
   text: string;
 }
 
+/** One thing still unknown, with the ways the user can supply it (Gate D guided solving). */
+export interface MissingItem {
+  target: string;
+  options: { text: string; /** form field id (e.g. `x2`, `z1`, `v0`, `len1`) when typing a value fixes it */ field?: string }[];
+}
+
 export interface ContourSolution {
   status: Status;
   points: SolvedPoint[];
   segments: SolvedSegment[];
   messages: ContourMessage[];
+  /** Only on amber results: what is unknown and the shortest ways to resolve each item. */
+  missing?: MissingItem[];
 }
 
 /** Agreement tolerance between two derivations of the same value, in mm. */

@@ -366,3 +366,38 @@ describe('contour — radius into a taper (Gate C2)', () => {
     near(r.points[1]!.arc!.tangentLength, 2);
   });
 });
+
+describe('contour — guided missing-data solver (Gate D)', () => {
+  it('a missing Z lists the exact fields that would fix it', () => {
+    const r = solveContour(prof([P(25.4, 0), P(25.4, null)], [S('straight')]));
+    expect(r.status).toBe('amber');
+    const z = r.missing!.find((m) => m.target.startsWith('P2 position'))!;
+    expect(z.options.map((o) => o.field)).toEqual(['z1', 'v0']);
+  });
+  it('a shoulder with an unknown diameter offers its diameter change only when the other end is known', () => {
+    const r = solveContour(prof([P(25.4, 0), P(null, 0)], [S('shoulder')]));
+    const x = r.missing!.find((m) => m.target.startsWith('P2 diameter'))!;
+    expect(x.options.map((o) => o.field)).toEqual(['x1', 'v0']);
+  });
+  it('an unknown straight neighbour is offered by its diameter, not its length', () => {
+    const r = solveContour(prof([P(null, 0), P(null, -10)], [S('straight')]));
+    const x = r.missing!.find((m) => m.target.startsWith('P1 diameter'))!;
+    expect(x.options.map((o) => o.field)).toEqual(['x0', 'x1']);
+  });
+  it('an under-specified taper asks for any two values', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 5 })]));
+    expect(r.missing!.some((m) => m.target === 'taper P1→P2')).toBe(true);
+  });
+  it('a taper whose direction is ambiguous asks for the direction, never guesses', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 5, angle: 45 })]));
+    expect(r.missing!.some((m) => m.target === 'taper P1→P2 direction')).toBe(true);
+  });
+  it('green and red results carry no missing list', () => {
+    expect(solveContour(prof([P(25.4, 0), P(25.4, -10)], [S('straight')])).missing).toBeUndefined();
+    expect(solveContour(prof([P(25.4, 0), P(30, -10)], [S('straight')])).missing).toBeUndefined();
+  });
+  it('every suggested field exists on the form (x/z per point, v/len/dx per segment)', () => {
+    const r = solveContour(prof([P(null, null), P(null, null), P(null, null)], [S('shoulder'), T({})]));
+    for (const m of r.missing ?? []) for (const o of m.options) if (o.field) expect(o.field).toMatch(/^(x|z)[0-2]$|^(v|len|dx)[0-1]$/);
+  });
+});
