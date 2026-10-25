@@ -13,8 +13,8 @@
  *  - Saved profiles carry `schema` so they can be migrated safely.
  */
 
-/** v1 = straight/shoulder only (Test 1.5). v2 adds taper segments. v1 profiles are valid v2 profiles. */
-export const CONTOUR_SCHEMA = 2;
+/** v1 = straight/shoulder (Test 1.5). v2 adds taper segments. v3 adds corner radii. Older profiles remain valid. */
+export const CONTOUR_SCHEMA = 3;
 export const CONTOUR_SCHEMA_MIN = 1;
 
 export type ContourSide = 'od' | 'id';
@@ -23,10 +23,15 @@ export type ContourSide = 'od' | 'id';
 export type Known = number | null;
 
 export interface ContourPoint {
-  /** Diameter (mm). */
+  /** Diameter (mm) of the SHARP (virtual) corner — where the two lines would meet. */
   x: Known;
   /** Distance from P0 along the axis (mm), negative toward the chuck. */
   z: Known;
+  /**
+   * Corner radius (mm) rounding this point. null/undefined/0 = sharp corner (no radius).
+   * Only interior points can have one. Dimensions to the point are to the SHARP corner.
+   */
+  radius?: Known;
 }
 
 /**
@@ -66,11 +71,35 @@ export interface ContourProfile {
 export type Source = 'given' | 'solved' | 'unknown';
 export type Status = 'green' | 'amber' | 'red';
 
+export interface XZ {
+  /** Diameter (mm). */
+  x: number;
+  z: number;
+}
+
+export interface SolvedArc {
+  radius: number;
+  /** Distance from the sharp corner back along each leg to the tangent point. */
+  tangentLength: number;
+  /** Where the arc starts (on the incoming leg) and ends (on the outgoing leg). */
+  start: XZ;
+  end: XZ;
+  /** Arc center; x is a DIAMETER-scale coordinate (2 × radial position). */
+  center: XZ;
+  /** Direction of travel around the arc in the X–Z drawing (Z increasing right, X up). */
+  turn: 'ccw' | 'cw';
+  /** Convex = the arc bulges away from the material (a rounded outside corner). */
+  convex: boolean;
+  sweepDeg: number;
+}
+
 export interface SolvedPoint {
   x: Known;
   z: Known;
   xSource: Source;
   zSource: Source;
+  /** Present when this corner has a radius that could be solved. */
+  arc?: SolvedArc;
 }
 
 export interface SolvedTaper {

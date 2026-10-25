@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { solveContour } from '../src/core/contour/engine';
 import { CONTOUR_SCHEMA, type ContourProfile, type ContourSegment, type ContourPoint } from '../src/core/contour/types';
 
-const P = (x: number | null, z: number | null): ContourPoint => ({ x, z });
+const P = (x: number | null, z: number | null, radius?: number | null): ContourPoint => ({ x, z, ...(radius !== undefined ? { radius } : {}) });
 const S = (kind: ContourSegment['kind'], value: number | null = null): ContourSegment => ({ kind, value });
 const prof = (points: ContourPoint[], segments: ContourSegment[]): ContourProfile => ({ schema: CONTOUR_SCHEMA, side: 'od', points, segments });
 
@@ -98,7 +98,7 @@ describe('contour — status: amber / red', () => {
   it('structural errors fail closed', () => {
     expect(solveContour(prof([P(1, 0)], [])).status).toBe('red');
     expect(solveContour(prof([P(1, 0), P(null, null)], [])).status).toBe('red');
-    expect(solveContour({ ...prof([P(1, 0), P(null, null)], [S('straight', 1)]), schema: 99 as 2 }).status).toBe('red');
+    expect(solveContour({ ...prof([P(1, 0), P(null, null)], [S('straight', 1)]), schema: 99 as 3 }).status).toBe('red');
     expect(solveContour(prof([P(Number.NaN, 0), P(null, null)], [S('straight', 1)])).status).toBe('red');
   });
 });
@@ -205,10 +205,96 @@ describe('contour — tapers (Gate B2)', () => {
     expect(solveContour(prof([P(10, 0), P(null, null)], [T({ length: 10, angle: 60, dir: -1 })])).status).toBe('red');
   });
   it('v1 (Test 1.5) saved profiles still solve', () => {
-    expect(solveContour({ ...prof([P(20, 0), P(null, -5)], [S('straight')]), schema: 1 as 2 }).status).toBe('green');
+    expect(solveContour({ ...prof([P(20, 0), P(null, -5)], [S('straight')]), schema: 1 as 3 }).status).toBe('green');
   });
   it('never NaN/Infinity from taper math', () => {
     const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 1e-3, angle: 89.999, dir: 1 })]));
     for (const p of r.points) for (const v of [p.x, p.z]) expect(v === null || Number.isFinite(v)).toBe(true);
+  });
+});
+
+const IN = 25.4;
+const prof2 = (side: 'od' | 'id', points: ContourPoint[], segments: ContourSegment[]): ContourProfile => ({ schema: CONTOUR_SCHEMA, side, points, segments });
+const near = (a: number, b: number) => expect(a).toBeCloseTo(b, 9);
+
+describe('contour — corner radii (Gate C1)', () => {
+  it("shop case 1 (OD, rounded end corner, then toward the chuck): arc X1.5 Z0 → X2.0 Z−.25, center X1.5 Z−.25, CCW", () => {
+    const r = solveContour(prof2('od', [P(1 * IN, 0), P(2 * IN, 0, 0.25 * IN), P(null, -1.5 * IN)], [S('shoulder'), S('straight')]));
+    expect(r.status).toBe('green');
+    const a = r.points[1]!.arc!;
+    near(a.start.x, 1.5 * IN); near(a.start.z, 0);
+    near(a.end.x, 2 * IN); near(a.end.z, -0.25 * IN);
+    near(a.center.x, 1.5 * IN); near(a.center.z, -0.25 * IN);
+    expect(a.turn).toBe('ccw');
+    expect(a.convex).toBe(true);
+    near(a.sweepDeg, 90);
+    near(a.tangentLength, 0.25 * IN);
+  });
+  it("shop case 2 (ID, rounded bore-bottom corner): arc X1.0 Z−.75 → X.5 Z−1.0, center X.5 Z−.75, CCW, concave", () => {
+    const r = solveContour(prof2('id', [P(1 * IN, 0), P(1 * IN, -1 * IN, 0.25 * IN), P(0, null)], [S('straight'), S('shoulder')]));
+    expect(r.status).toBe('green');
+    const a = r.points[1]!.arc!;
+    near(a.start.x, 1 * IN); near(a.start.z, -0.75 * IN);
+    near(a.end.x, 0.5 * IN); near(a.end.z, -1 * IN);
+    near(a.center.x, 0.5 * IN); near(a.center.z, -0.75 * IN);
+    expect(a.turn).toBe('ccw');
+    expect(a.convex).toBe(false);
+  });
+  it('OD inside corner where a straight meets a step up: clockwise, concave', () => {
+    const r = solveContour(prof2('od', [P(1 * IN, 0), P(1 * IN, -1 * IN, 0.125 * IN), P(2 * IN, null)], [S('straight'), S('shoulder')]));
+    const a = r.points[1]!.arc!;
+    near(a.start.x, 1 * IN); near(a.start.z, -0.875 * IN);
+    near(a.end.x, 1.25 * IN); near(a.end.z, -1 * IN);
+    near(a.center.x, 1.25 * IN); near(a.center.z, -0.875 * IN);
+    expect(a.turn).toBe('cw');
+    expect(a.convex).toBe(false);
+  });
+  it('X is a diameter: a radius R moves the tangent X by 2R, not R', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 3), P(null, -30)], [S('shoulder'), S('straight')]));
+    near(r.points[1]!.arc!.start.x, 20 - 2 * 3); // 14, not 17
+  });
+  it('a radius uses part of each line: leftover straight is length − R', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 3), P(null, -30)], [S('shoulder'), S('straight')]));
+    near(r.points[1]!.arc!.end.z, -3);
+  });
+  it('two radii may share a line exactly (R + R = length)', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 5), P(null, -10, 5), P(10, null)], [S('shoulder'), S('straight'), S('shoulder')]));
+    expect(r.status).toBe('green');
+  });
+  it('red: radius too large for the line (or two radii too big together)', () => {
+    expect(solveContour(prof2('od', [P(10, 0), P(20, 0, 8), P(null, -5)], [S('shoulder'), S('straight')])).status).toBe('red');
+    expect(solveContour(prof2('od', [P(10, 0), P(20, 0, 6), P(null, -10, 6), P(10, null)], [S('shoulder'), S('straight'), S('shoulder')])).status).toBe('red');
+  });
+  it('red: radius on an end point, negative radius, or where there is no corner', () => {
+    expect(solveContour(prof2('od', [P(10, 0, 2), P(20, 0), P(null, -5)], [S('shoulder'), S('straight')])).status).toBe('red');
+    expect(solveContour(prof2('od', [P(10, 0), P(20, 0, -1), P(null, -5)], [S('shoulder'), S('straight')])).status).toBe('red');
+    expect(solveContour(prof2('od', [P(20, 0), P(20, -5, 1), P(null, -10)], [S('straight'), S('straight')])).status).toBe('red');
+  });
+  it('zero or blank radius = sharp corner, no arc', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 0), P(null, -5, null)], [S('shoulder'), S('straight')]));
+    expect(r.status).toBe('green');
+    expect(r.points.some((p) => p.arc)).toBe(false);
+  });
+  it('amber when the neighbouring positions are not known yet', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 2), P(null, null)], [S('shoulder'), S('straight')]));
+    expect(r.status).toBe('amber');
+    expect(r.messages.some((m) => /corner radius at P2/.test(m.text))).toBe(true);
+  });
+  it('radius into a taper corner also solves (general fillet)', () => {
+    // straight along the OD then a 45° taper growing toward the chuck: interior angle 135°, tangent length = R·tan(22.5°)
+    const r = solveContour(prof2('od', [P(20, 0), P(20, -10, 4), P(30, -15)], [S('straight'), T({})]));
+    expect(r.status).toBe('green');
+    near(r.points[1]!.arc!.tangentLength, 4 * Math.tan(Math.PI / 8));
+    near(r.points[1]!.arc!.sweepDeg, 45);
+  });
+  it('every arc point is exactly R from the center and the legs are tangent', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(40, 0, 7.5), P(null, -30)], [S('shoulder'), S('straight')]));
+    const a = r.points[1]!.arc!;
+    near(Math.hypot(a.start.z - a.center.z, (a.start.x - a.center.x) / 2), 7.5);
+    near(Math.hypot(a.end.z - a.center.z, (a.end.x - a.center.x) / 2), 7.5);
+  });
+  it('no NaN/Infinity', () => {
+    const r = solveContour(prof2('od', [P(10, 0), P(20, 0, 1e-4), P(null, -30)], [S('shoulder'), S('straight')]));
+    expect(Object.values(r.points[1]!.arc!).every((v) => typeof v !== 'number' || Number.isFinite(v))).toBe(true);
   });
 });

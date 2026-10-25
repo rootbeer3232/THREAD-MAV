@@ -41,12 +41,12 @@ interface FormState {
   dxMode: 'total' | 'perSide';
   /** Which way the taper angle is measured when typed. */
   angRef: 'axis' | 'face';
-  pts: { x: Cell; z: Cell }[];
+  pts: { x: Cell; z: Cell; r: Cell }[];
   segs: SegState[];
 }
 
 const cell = (): Cell => ({ v: null, t: '', bad: false });
-const newPoint = () => ({ x: cell(), z: cell() });
+const newPoint = () => ({ x: cell(), z: cell(), r: cell() });
 const newSeg = (kind: SegmentKind = 'straight'): SegState => ({ kind, v: cell(), len: cell(), dx: cell(), ang: cell(), dir: 0 });
 
 const initial = (unit: Unit): FormState => ({
@@ -55,7 +55,7 @@ const initial = (unit: Unit): FormState => ({
   side: 'od',
   dxMode: 'perSide',
   angRef: 'axis',
-  pts: [{ x: cell(), z: { v: 0, t: '0', bad: false } }, newPoint()],
+  pts: [{ x: cell(), z: { v: 0, t: '0', bad: false }, r: cell() }, newPoint()],
   segs: [newSeg()],
 });
 
@@ -74,7 +74,7 @@ function angText(f: FormState, deg: number | null): string {
 }
 
 function retext(f: FormState) {
-  for (const p of f.pts) for (const c of [p.x, p.z]) if (!c.bad) c.t = lengthText(c.v, f.unit);
+  for (const p of f.pts) for (const c of [p.x, p.z, p.r]) if (!c.bad) c.t = lengthText(c.v, f.unit);
   for (const s of f.segs) {
     if (!s.v.bad) s.v.t = lengthText(s.v.v, f.unit);
     if (!s.len.bad) s.len.t = lengthText(s.len.v, f.unit);
@@ -86,7 +86,7 @@ function retext(f: FormState) {
 const profileOf = (f: FormState): ContourProfile => ({
   schema: CONTOUR_SCHEMA,
   side: f.side,
-  points: f.pts.map((p) => ({ x: p.x.v, z: p.z.v })),
+  points: f.pts.map((p) => ({ x: p.x.v, z: p.z.v, radius: p.r.v })),
   segments: f.segs.map((s) => (s.kind === 'taper' ? { kind: 'taper' as const, value: null, length: s.len.v, dx: s.dx.v, angle: s.ang.v, dir: s.dir === 0 ? null : s.dir } : { kind: s.kind, value: s.v.v })),
 });
 
@@ -101,7 +101,7 @@ function migrate(raw: unknown): FormState | null {
     side: f.side === 'id' ? 'id' : 'od',
     dxMode: f.dxMode === 'total' ? 'total' : 'perSide',
     angRef: f.angRef === 'face' ? 'face' : 'axis',
-    pts: f.pts,
+    pts: f.pts.map((p) => ({ ...p, r: p.r ?? cell() })),
     segs: f.segs.map((s) => ({ ...newSeg(s.kind), ...s, len: s.len ?? cell(), dx: s.dx ?? cell(), ang: s.ang ?? cell(), dir: s.dir ?? 0 })),
   };
 }
@@ -292,6 +292,9 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
           { class: 'card form-card contour-card' },
           h('h3', { class: 'card-title' }, `Point P${i + 1}`),
           h('div', { class: 'contour-row' }, bind(`x${i}`, 'X (diameter)', p.x, 'len', { placeholder: 'blank = solve' }).el, bind(`z${i}`, 'Z from P0', p.z, 'len', { signed: true, placeholder: 'blank = solve' }).el),
+          ...(i > 0 && i < form.pts.length - 1
+            ? [bind(`r${i}`, 'Corner radius (optional)', p.r, 'len', { placeholder: 'blank = sharp corner' }).el, h('p', { class: 'dim small' }, 'X and Z above are the SHARP corner, as dimensioned on the print — the radius is blended in for you.')]
+            : []),
         ),
       );
       if (i < form.segs.length) {
@@ -346,10 +349,10 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
     formHost.querySelector<HTMLElement>('#err-banner')?.classList.remove('show');
     // malformed text is reported before solving (never silently treated as blank)
     const badField = [...fields.entries()].find(([id]) => {
-      const m = /^(x|z|v|len|dx|ang)(\d+)$/.exec(id);
+      const m = /^(x|z|r|v|len|dx|ang)(\d+)$/.exec(id);
       if (!m) return false;
       const idx = Number(m[2]);
-      const c = m[1] === 'x' ? form.pts[idx]?.x : m[1] === 'z' ? form.pts[idx]?.z : form.segs[idx]?.[m[1] as 'v' | 'len' | 'dx' | 'ang'];
+      const c = m[1] === 'x' ? form.pts[idx]?.x : m[1] === 'z' ? form.pts[idx]?.z : m[1] === 'r' ? form.pts[idx]?.r : form.segs[idx]?.[m[1] as 'v' | 'len' | 'dx' | 'ang'];
       return !!c?.bad;
     });
     if (badField) {

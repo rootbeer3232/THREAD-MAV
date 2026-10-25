@@ -8,6 +8,7 @@ import {
   CONTOUR_SCHEMA,
   CONTOUR_TOL_MM,
   CONTOUR_TRIG_TOL_MM,
+  type SolvedArc,
   type SolvedTaper,
   type TaperDir,
   type ContourMessage,
@@ -171,6 +172,66 @@ export function solveContour(profile: ContourProfile): ContourSolution {
     }
   });
 
+  // ---------- corner radii (Gate C1): tangent points and arc centers ----------
+  const arcs: (SolvedArc | undefined)[] = new Array(n).fill(undefined);
+  const radiusNeeds: string[] = [];
+  profile.points.forEach((pt, i) => {
+    const R = pt.radius ?? null;
+    if (R === null || R === 0) return;
+    const at = label(i);
+    if (R < 0 || !Number.isFinite(R)) return red(`Corner radius at ${at} must be greater than zero (leave it blank for a sharp corner).`);
+    if (i === 0 || i === n - 1) return red(`${at} is an end of the profile — a corner radius needs a line on both sides of the point.`);
+    const A = [Z[i - 1] ?? null, X[i - 1] ?? null, Z[i] ?? null, X[i] ?? null, Z[i + 1] ?? null, X[i + 1] ?? null];
+    if (A.some((v) => v === null)) {
+      radiusNeeds.push(`corner radius at ${at}: positions of ${label(i - 1)}, ${at} and ${label(i + 1)} must be known first`);
+      return;
+    }
+    // physical plane: (z, r) with r = X / 2 — X is a diameter, so every radial distance is HALF the X change
+    const pa = { z: A[0]!, r: A[1]! / 2 };
+    const pc = { z: A[2]!, r: A[3]! / 2 };
+    const pb = { z: A[4]!, r: A[5]! / 2 };
+    const l1 = Math.hypot(pc.z - pa.z, pc.r - pa.r);
+    const l2 = Math.hypot(pb.z - pc.z, pb.r - pc.r);
+    if (l1 <= CONTOUR_TOL_MM || l2 <= CONTOUR_TOL_MM) return; // zero-length neighbour: reported elsewhere
+    const d1 = { z: (pc.z - pa.z) / l1, r: (pc.r - pa.r) / l1 };
+    const d2 = { z: (pb.z - pc.z) / l2, r: (pb.r - pc.r) / l2 };
+    const cross = d1.z * d2.r - d1.r * d2.z;
+    const dot = d1.z * d2.z + d1.r * d2.r;
+    const phi = Math.atan2(Math.abs(cross), dot); // turn angle at the corner
+    if (phi < 1e-9) return red(`There is no corner at ${at} to round — the two lines run straight on.`);
+    if (phi > Math.PI - 1e-9) return red(`The profile doubles back on itself at ${at}, so a radius can’t be fitted.`);
+    const t = R * Math.tan(phi / 2);
+    const t1 = { z: pc.z - d1.z * t, r: pc.r - d1.r * t };
+    const t2 = { z: pc.z + d2.z * t, r: pc.r + d2.r * t };
+    const left = cross > 0;
+    const nrm = left ? { z: -d1.r, r: d1.z } : { z: d1.r, r: -d1.z };
+    const ctr = { z: t1.z + nrm.z * R, r: t1.r + nrm.r * R };
+    // material is on the LEFT of travel for an OD profile and on the RIGHT for an ID profile
+    const centerOnMaterialSide = profile.side === 'od' ? left : !left;
+    const arc: SolvedArc = {
+      radius: R,
+      tangentLength: t,
+      start: { x: 2 * t1.r, z: t1.z },
+      end: { x: 2 * t2.r, z: t2.z },
+      center: { x: 2 * ctr.r, z: ctr.z },
+      turn: left ? 'ccw' : 'cw',
+      convex: centerOnMaterialSide,
+      sweepDeg: (phi * 180) / Math.PI,
+    };
+    if (![arc.start.x, arc.start.z, arc.end.x, arc.end.z, arc.center.x, arc.center.z, t].every(Number.isFinite)) return red(`The radius at ${at} could not be solved.`);
+    arcs[i] = arc;
+  });
+  // the tangent lengths taken from a line by the radii at its two ends must fit on that line
+  profile.segments.forEach((_seg, i) => {
+    const used = (arcs[i]?.tangentLength ?? 0) + (arcs[i + 1]?.tangentLength ?? 0);
+    if (used <= CONTOUR_TOL_MM) return;
+    if (X[i] === null || Z[i] === null || X[i + 1] === null || Z[i + 1] === null) return;
+    const have = Math.hypot(Z[i + 1]! - Z[i]!, (X[i + 1]! - X[i]!) / 2);
+    if (used > have + CONTOUR_TOL_MM) {
+      red(`The radius is too large for the line ${label(i)}→${label(i + 1)}: the arc${arcs[i] && arcs[i + 1] ? 's' : ''} need${arcs[i] && arcs[i + 1] ? '' : 's'} ${fmt(used)} of it but the line is only ${fmt(have)} long. Use a smaller radius or check the dimensions.`);
+    }
+  });
+
   profile.segments.forEach((seg, i) => {
     if (seg.kind !== 'taper') return;
     const name = `${label(i)}→${label(i + 1)}`;
@@ -196,7 +257,7 @@ export function solveContour(profile: ContourProfile): ContourSolution {
 
   // ---------- assemble ----------
   const src = (known: boolean, value: Known): Source => (value === null ? 'unknown' : known ? 'given' : 'solved');
-  const points = X.map((x, i) => ({ x, z: Z[i]!, xSource: src(xGiven[i]!, x), zSource: src(zGiven[i]!, Z[i]!) }));
+  const points = X.map((x, i) => ({ x, z: Z[i]!, xSource: src(xGiven[i]!, x), zSource: src(zGiven[i]!, Z[i]!), ...(arcs[i] ? { arc: arcs[i] } : {}) }));
   const segments = profile.segments.map((s, i) => {
     const base = { kind: s.kind, value: V[i] ?? null, source: src(vGiven[i] ?? false, V[i] ?? null) };
     if (s.kind !== 'taper') return base;
@@ -227,6 +288,7 @@ export function solveContour(profile: ContourProfile): ContourSolution {
       if (known < 2) needs.push(`taper ${label(i)}→${label(i + 1)}: give any two of length, diameter change and angle`);
       else if (Dx[i] === null && Dir[i] === null) needs.push(`taper ${label(i)}→${label(i + 1)}: whether the diameter gets BIGGER or SMALLER toward the chuck`);
     });
+    needs.push(...radiusNeeds);
     if (needs.length) {
       status = 'amber';
       messages.push({
