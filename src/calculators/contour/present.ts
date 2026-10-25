@@ -101,3 +101,18 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     messages: [...msgs, ...info],
   };
 }
+
+/** Plain-text coordinate list in the working unit, for copying into notes or a program. Solved values only. */
+export function contourCoordinateText(sol: ContourSolution, unit: 'in' | 'mm', dp: number, side: 'od' | 'id'): string {
+  const c = (mm: number) => (unit === 'in' ? mm / 25.4 : mm).toFixed(dp);
+  const lines = [`Contour IQ — ${side.toUpperCase()} (${unit}, X = diameter, Z from P0)`];
+  sol.points.forEach((p, i) => {
+    if (p.x === null && p.z === null) return;
+    lines.push(`P${i + 1}  X ${p.x === null ? '?' : c(p.x)}  Z ${p.z === null ? '?' : c(p.z)}`);
+    if (p.arc) {
+      const a = p.arc;
+      lines.push(`  R${c(a.radius)} arc  start X ${c(a.start.x)} Z ${c(a.start.z)}  end X ${c(a.end.x)} Z ${c(a.end.z)}  center X ${c(a.center.x)} Z ${c(a.center.z)}  ${a.convex ? 'convex' : 'concave'} ${a.turn === 'ccw' ? 'CCW' : 'CW'}`);
+    }
+  });
+  return lines.join('\n');
+}
