@@ -15,6 +15,7 @@ import {
   type ContourProfile,
   type ContourSolution,
   type Known,
+  type MissingItem,
   type Source,
   type Status,
 } from './types';
@@ -275,6 +276,7 @@ export function solveContour(profile: ContourProfile): ContourSolution {
   });
 
   let status: Status = 'green';
+  let missing: MissingItem[] | undefined;
   if (conflicted) status = 'red';
   else {
     const needs: string[] = [];
@@ -291,6 +293,7 @@ export function solveContour(profile: ContourProfile): ContourSolution {
     needs.push(...radiusNeeds);
     if (needs.length) {
       status = 'amber';
+      missing = buildMissing();
       messages.push({
         level: 'amber',
         text: `More information needed — not enough is known to solve: ${needs.join(', ')}. Enter any of these, or the length / diameter change of the segment next to it.`,
@@ -298,7 +301,43 @@ export function solveContour(profile: ContourProfile): ContourSolution {
     }
   }
   if (status === 'green') messages.push({ level: 'info', text: 'All values are determined and consistent.' });
-  return { status, points, segments, messages };
+  return { status, points, segments, messages, ...(missing ? { missing } : {}) };
+
+  /** Gate D: for every unknown, list the shortest things the user could type to resolve it. */
+  function buildMissing(): MissingItem[] {
+    const out: MissingItem[] = [];
+    const neighbours = (i: number) => [i - 1, i].filter((j) => j >= 0 && j < n - 1).map((j) => ({ j, other: j === i ? i + 1 : i - 1, seg: profile.segments[j]! }));
+    for (let i = 0; i < n; i++) {
+      if (X[i] === null) {
+        const options: MissingItem['options'] = [{ text: `type the diameter of ${label(i)}`, field: `x${i}` }];
+        for (const { j, other, seg } of neighbours(i)) {
+          const name = `${label(Math.min(i, other))}→${label(Math.max(i, other))}`;
+          if (seg.kind === 'straight' && X[other] === null) options.push({ text: `the diameter of ${label(other)} (a straight keeps one diameter)`, field: `x${other}` });
+          else if (seg.kind === 'shoulder' && X[other] !== null && V[j] === null) options.push({ text: `the diameter change of shoulder ${name}`, field: `v${j}` });
+          else if (seg.kind === 'taper' && X[other] !== null && Dx[j] === null) options.push({ text: `the diameter change of taper ${name}${Dir[j] === null ? ' (or its direction)' : ''}`, field: `dx${j}` });
+        }
+        out.push({ target: `${label(i)} diameter (X)`, options });
+      }
+      if (Z[i] === null) {
+        const options: MissingItem['options'] = [{ text: `type the Z position of ${label(i)}`, field: `z${i}` }];
+        for (const { j, other, seg } of neighbours(i)) {
+          const name = `${label(Math.min(i, other))}→${label(Math.max(i, other))}`;
+          if (Z[other] === null) continue;
+          if (seg.kind === 'straight' && V[j] === null) options.push({ text: `the length of straight ${name}`, field: `v${j}` });
+          else if (seg.kind === 'taper' && Len[j] === null) options.push({ text: `the axial length of taper ${name}`, field: `len${j}` });
+        }
+        out.push({ target: `${label(i)} position from P0 (Z)`, options });
+      }
+    }
+    profile.segments.forEach((seg, i) => {
+      if (seg.kind !== 'taper') return;
+      const known = [Len[i], Dx[i] ?? Mag[i], Ang[i]].filter((v) => v !== null).length;
+      const name = `${label(i)}→${label(i + 1)}`;
+      if (known < 2) out.push({ target: `taper ${name}`, options: [{ text: 'any two of: axial length, diameter change, angle', field: `len${i}` }] });
+      else if (Dx[i] === null && Dir[i] === null) out.push({ target: `taper ${name} direction`, options: [{ text: 'set BIGGER or SMALLER toward the chuck (the numbers alone cannot show which)' }] });
+    });
+    return out;
+  }
 
   function fail(text: string): ContourSolution {
     return { status: 'red', points: [], segments: [], messages: [{ level: 'red', text }] };

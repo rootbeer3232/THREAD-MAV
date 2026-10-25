@@ -85,12 +85,15 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     ];
   });
 
+  const nextRows: ResultRow[] = (sol.missing ?? []).map((m) => ({ label: m.target, text: m.options.map((o) => o.text).join('  ·  or  ·  '), size: 'normal' as const }));
+
   return {
     title: `Contour IQ — ${side.toUpperCase()}`,
     subtitle: `${sol.points.length} points · ${sol.segments.length} segments · X diameter, Z from P0`,
     badges: [{ text: level === 'green' ? 'SOLVED' : 'PARTIAL', tone: level === 'green' ? 'verified' : 'warn' }],
     status: { level, text: statusText },
     sections: [
+      ...(nextRows.length ? [{ title: 'What to enter next', rows: nextRows }] : []),
       { title: 'Coordinates', xyCols: ['X (dia)', 'Z'], rows },
       { title: 'Segments', rows: segRows },
       ...(arcRows.length ? [{ title: 'Radius corners', xyCols: ['X (dia)', 'Z'] as [string, string], rows: arcRows }] : []),

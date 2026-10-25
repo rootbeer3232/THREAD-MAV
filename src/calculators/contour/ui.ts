@@ -344,6 +344,22 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
     formHost.replaceChildren(...parts);
   }
 
+  /** Gate D: one tap jumps to the field that would resolve each unknown. */
+  function jumpChips(missing: NonNullable<ReturnType<typeof solveContour>['missing']>): HTMLElement[] {
+    const targets = missing.flatMap((m) => m.options.filter((o) => o.field).map((o) => ({ text: `${m.target}: ${o.text}`, field: o.field! })));
+    if (!targets.length) return [];
+    return [
+      h(
+        'div',
+        { class: 'card form-card contour-jump' },
+        h('h3', { class: 'card-title' }, 'Tap to fill in'),
+        ...targets.map((t) =>
+          h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: () => { const f = fields.get(t.field); (f?.input ?? null)?.scrollIntoView({ block: 'center', behavior: 'smooth' }); window.setTimeout(() => f?.input.focus(), 350); } } }, t.text),
+        ),
+      ),
+    ];
+  }
+
   async function calculate(opts: { silent?: boolean } = {}) {
     fields.forEach((f) => f.setError(null));
     formHost.querySelector<HTMLElement>('#err-banner')?.classList.remove('show');
@@ -383,7 +399,7 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
             engine: ENGINE_VERSION,
           }));
       }
-      resultHost.replaceChildren(renderPresentation(presentation, fo), bar.el);
+      resultHost.replaceChildren(renderPresentation(presentation, fo), ...jumpChips(sol.missing ?? []), bar.el);
       bar.setRecord(record);
     } else {
       record = null;
