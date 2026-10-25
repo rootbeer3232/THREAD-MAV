@@ -32,7 +32,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   { id: 'thread', name: 'Thread / 3-Wire', blurb: 'Unified, ISO metric & custom. Best wire, over-wires, pitch diameter.', category: 'threads', status: 'ready', route: 'thread' },
   { id: 'thread-chart', name: 'Thread Chart', blurb: 'Unified & metric sizes, basic dimensions, tap drill, % thread.', category: 'threads', status: 'ready', route: 'threadchart' },
   { id: 'drill-chart', name: 'Drill Chart', blurb: 'Fraction, number, letter, metric — find the nearest drill.', category: 'threads', status: 'ready', route: 'drillchart' },
-  planned('thread-depth', 'Thread Depth / Compound Infeed', 'Lathe threading infeed helper', 'threads'),
+  { id: 'thread-depth', name: 'Thread Depth / Infeed', blurb: 'Thread depth, pass schedule, compound travel and Z shift for lathe threading.', category: 'threads', status: 'ready', route: 'threaddepth' },
   { id: 'sine', name: 'Sine Bar', blurb: 'Find stack height or angle. 5.000" preset or custom bar.', category: 'angles', status: 'ready', route: 'sine' },
   { id: 'taper', name: 'Taper', blurb: 'D, d, length, taper per inch/foot, angle — solve the missing one.', category: 'angles', status: 'ready', route: 'taper' },
   { id: 'triangle', name: 'Right Triangle', blurb: 'Any two knowns → rise, run, hypotenuse, angle.', category: 'angles', status: 'ready', route: 'triangle' },
