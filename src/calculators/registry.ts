@@ -44,7 +44,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   { id: 'arc', name: 'Radius / Chord / Sagitta', blurb: 'Any two of radius, chord, sagitta, angle.', category: 'geometry', status: 'ready', route: 'arc' },
   { id: 'contour', name: 'Contour IQ', blurb: 'Lathe profile coordinates from print dimensions — straight steps and shoulders (radii & tapers coming).', category: 'geometry', status: 'ready', route: 'contour' },
   planned('ball-pin', 'Ball / Pin Measurement', 'Measurement over ball/pin', 'geometry'),
-  planned('shim', 'Shim / Spacer Stack', 'Practical shim combinations', 'geometry'),
+  { id: 'shim', name: 'Shim Stack', blurb: 'Fewest shims from YOUR drawer to hit a thickness.', category: 'geometry', status: 'ready', route: 'shim' },
   { id: 'speeds', name: 'Speeds & Feeds', blurb: 'Milling, turning, drilling: RPM, feed rate, SFM ↔ m/min.', category: 'cutting', status: 'ready', route: 'speeds' },
 ];
 

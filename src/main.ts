@@ -10,6 +10,7 @@ import { mountTaper } from './calculators/taper/ui';
 import { mountChamfer } from './calculators/chamfer/ui';
 import { mountArc } from './calculators/arc/ui';
 import { mountContour } from './calculators/contour/ui';
+import { mountShim } from './calculators/shim/ui';
 import { mountDrillPoint } from './calculators/drillpoint/ui';
 import { mountCskCbore } from './calculators/cskcbore/ui';
 import { DEFAULT_SETTINGS, type Settings } from './core/settings-model';
@@ -65,6 +66,7 @@ async function boot() {
     { route: 'chamfer', title: 'Chamfer', tab: 'calcs', back: 'calcs', render: (c, p) => mountChamfer(c, p) },
     { route: 'arc', title: 'Radius / Chord / Sagitta', tab: 'calcs', back: 'calcs', render: (c, p) => mountArc(c, p) },
     { route: 'contour', title: 'Contour IQ', tab: 'calcs', back: 'calcs', render: (c, p) => mountContour(c, p) },
+    { route: 'shim', title: 'Shim Stack', tab: 'calcs', back: 'calcs', render: (c, p) => mountShim(c, p) },
     { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
     { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },
