@@ -1,3 +1,4 @@
+import { INSPECT_KIND_TEXT, inspectionPoints } from '../../core/contour/inspect';
 import { dualFrom } from '../../core/units';
 import type { ContourSolution, Source } from '../../core/contour/types';
 import type { Presentation, ResultRow } from '../../core/results';
@@ -85,6 +86,12 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     ];
   });
 
+  const insp = inspectionPoints(sol);
+  const inspRows: ResultRow[] = (insp ?? []).map((q) => ({
+    label: `#${q.n}  ${q.label} ${INSPECT_KIND_TEXT[q.kind]}`,
+    size: 'normal' as const,
+    xy: { angle: q.reference ? 'reference only' : 'on the part', x: dual(q.x), y: dual(q.z) },
+  }));
   const nextRows: ResultRow[] = (sol.missing ?? []).map((m) => ({ label: m.target, text: m.options.map((o) => o.text).join('  ·  or  ·  '), size: 'normal' as const }));
 
   return {
@@ -96,6 +103,7 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
       ...(nextRows.length ? [{ title: 'What to enter next', rows: nextRows }] : []),
       { title: 'Coordinates', xyCols: ['X (dia)', 'Z'], rows },
       { title: 'Segments', rows: segRows },
+      ...(inspRows.length ? [{ title: 'Inspection points', xyCols: ['X (dia)', 'Z'] as [string, string], rows: inspRows }] : []),
       ...(arcRows.length ? [{ title: 'Radius corners', xyCols: ['X (dia)', 'Z'] as [string, string], rows: arcRows }] : []),
     ],
     messages: [...msgs, ...info],
