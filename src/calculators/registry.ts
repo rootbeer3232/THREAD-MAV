@@ -39,7 +39,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   { id: 'boltcircle', name: 'Bolt Circle', blurb: 'X/Y position and angle of every hole. Copy the list.', category: 'holes', status: 'ready', route: 'boltcircle' },
   { id: 'drillpoint', name: 'Drill Point Depth', blurb: 'Point length and total depth to program.', category: 'holes', status: 'ready', route: 'drillpoint' },
   { id: 'cskcbore', name: 'Countersink / Counterbore', blurb: 'Cone depth and diameter, counterbore size and depth.', category: 'holes', status: 'ready', route: 'cskcbore' },
-  planned('true-position', 'True Position', 'Coordinate deviation and position', 'holes'),
+  { id: 'true-position', name: 'True Position', blurb: 'Measured vs print X/Y → position Ø, pass/fail, MMC bonus.', category: 'holes', status: 'ready', route: 'trueposition' },
   { id: 'chamfer', name: 'Chamfer', blurb: 'Axial, radial, face length, angle — any two. End-face diameter.', category: 'geometry', status: 'ready', route: 'chamfer' },
   { id: 'arc', name: 'Radius / Chord / Sagitta', blurb: 'Any two of radius, chord, sagitta, angle.', category: 'geometry', status: 'ready', route: 'arc' },
   { id: 'contour', name: 'Contour IQ', blurb: 'Lathe profile coordinates from print dimensions — straight steps, shoulders and tapers (radii coming).', category: 'geometry', status: 'ready', route: 'contour' },
