@@ -1,4 +1,4 @@
-import { fmtFixed, sanitizeDecimalInput } from '../core/numeric';
+import { applyFraction, fmtFixed, parseDecimal, sanitizeDecimalInput, sanitizeFractionInput } from '../core/numeric';
 import type { Presentation, ResultRow, Tag } from '../core/results';
 import { type FormatOptions, fmtDual } from '../core/format';
 import { h, icon } from './dom';
@@ -24,6 +24,8 @@ export function numericField(opts: {
   hint?: string;
   /** Allow a leading minus (iOS decimal pad has no minus key, so a ± button is shown). */
   signed?: boolean;
+  /** Accept fractions (3/8, 1-1/2) and show the a/b helper. Defaults to true for inch fields. */
+  fraction?: boolean;
   onInput?: (v: string) => void;
   onEnter?: () => void;
 }): NumericField {
@@ -46,18 +48,64 @@ export function numericField(opts: {
   const clearBtn = h('button', { class: 'clear-x', type: 'button', 'aria-label': `Clear ${opts.label}`, tabindex: '-1' }, '×');
   const err = h('div', { id: `e-${opts.id}`, class: 'field-error', role: 'alert' });
   const labelEl = h('label', { for: `f-${opts.id}`, class: 'field-label' }, opts.label);
-  const wrap = h('div', { class: 'field' }, labelEl, h('div', { class: 'input-row' }, input, signBtn, clearBtn, unitEl), opts.hint ? h('div', { class: 'field-hint' }, opts.hint) : null, err);
+  const fractionOn = opts.fraction ?? opts.unit === 'in';
+  const fracBtn = fractionOn ? h('button', { class: 'frac-btn', type: 'button', 'aria-expanded': 'false', 'aria-label': `Fraction entry for ${opts.label || 'this field'}`, tabindex: '-1' }, 'a/b') : null;
+  const pad = h('div', { class: 'frac-pad', hidden: true });
+  const echo = h('div', { class: 'frac-echo' });
+  const wrap = h(
+    'div',
+    { class: 'field' },
+    fractionOn ? h('div', { class: 'label-row' }, labelEl, fracBtn) : labelEl,
+    h('div', { class: 'input-row' }, input, signBtn, clearBtn, unitEl),
+    echo,
+    pad,
+    opts.hint ? h('div', { class: 'field-hint' }, opts.hint) : null,
+    err,
+  );
+  if (fractionOn) input.setAttribute('placeholder', opts.placeholder ?? '');
+  const refreshEcho = () => {
+    const t = input.value;
+    if (!fractionOn || !t.includes('/')) {
+      echo.textContent = '';
+      return;
+    }
+    const v = parseDecimal(t);
+    echo.textContent = v === null || Number.isNaN(v) ? '⚠ Not a valid fraction — try 3/8 or 1-1/2' : `= ${v.toFixed(4)} in  ·  ${(v * 25.4).toFixed(3)} mm`;
+    echo.classList.toggle('bad', v === null || Number.isNaN(v));
+  };
+  const setText = (v: string) => {
+    input.value = v;
+    err.textContent = '';
+    wrap.classList.remove('has-error');
+    sync();
+    refreshEcho();
+    opts.onInput?.(v);
+  };
+  if (fractionOn) {
+    const FR = ['1/16', '1/8', '3/16', '1/4', '5/16', '3/8', '7/16', '1/2', '9/16', '5/8', '11/16', '3/4', '13/16', '7/8', '15/16'];
+    pad.append(
+      h('button', { class: 'frac-chip frac-sym', type: 'button', on: { click: () => setText(`${input.value}/`) } }, '/'),
+      h('button', { class: 'frac-chip frac-sym', type: 'button', on: { click: () => setText(`${input.value}-`) } }, '–'),
+      ...FR.map((f) => h('button', { class: 'frac-chip', type: 'button', on: { click: () => setText(applyFraction(input.value, f)) } }, f)),
+    );
+    fracBtn!.addEventListener('click', () => {
+      pad.hidden = !pad.hidden;
+      fracBtn!.setAttribute('aria-expanded', String(!pad.hidden));
+      fracBtn!.classList.toggle('on', !pad.hidden);
+    });
+  }
 
   const sync = () => {
     clearBtn.style.visibility = input.value ? 'visible' : 'hidden';
     unitEl.style.display = unitEl.textContent ? '' : 'none';
   };
   input.addEventListener('input', () => {
-    const clean = sanitizeDecimalInput(input.value, !!opts.signed);
+    const clean = fractionOn ? sanitizeFractionInput(input.value, !!opts.signed) : sanitizeDecimalInput(input.value, !!opts.signed);
     if (clean !== input.value) input.value = clean;
     err.textContent = '';
     wrap.classList.remove('has-error');
     sync();
+    refreshEcho();
     opts.onInput?.(input.value);
   });
   input.addEventListener('keydown', (e) => {
@@ -87,6 +135,7 @@ export function numericField(opts: {
     set: (v) => {
       input.value = v;
       sync();
+      refreshEcho();
     },
     setError: (m) => {
       err.textContent = m ? `⚠ ${m}` : '';

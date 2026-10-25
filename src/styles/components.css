@@ -2076,3 +2076,61 @@ input[type='search'].text-input {
   height: 52px;
   font-size: 26px;
 }
+
+/* ---------- fraction entry ---------- */
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 30px;
+}
+.frac-btn {
+  flex: none;
+  min-width: 52px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-3);
+  color: var(--blue);
+  font-weight: 900;
+  font-size: 14px;
+}
+.frac-btn.on {
+  background: var(--blue-strong);
+  color: #fff;
+  border-color: var(--blue);
+}
+.frac-echo {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: var(--blue);
+}
+.frac-echo:empty {
+  display: none;
+}
+.frac-echo.bad {
+  color: var(--orange);
+}
+.frac-pad {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.frac-chip {
+  min-width: 56px;
+  min-height: 44px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 800;
+}
+.frac-sym {
+  min-width: 48px;
+  color: var(--blue);
+  font-size: 22px;
+}

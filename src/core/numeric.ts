@@ -23,9 +23,33 @@ export function parseDecimal(raw: string | null | undefined): number | null {
   if (raw === null || raw === undefined) return null;
   const t = raw.trim().replace(',', '.');
   if (t === '' || t === '.' || t === '-') return null;
+  // fractions: "3/8", "1-1/2", "1 1/2", "-3/8"
+  const frac = /^(-?)(?:(\d+)[ -])?(\d+)\/(\d+)$/.exec(t);
+  if (frac) {
+    const den = Number(frac[4]);
+    if (den === 0) return Number.NaN;
+    const v = Number(frac[2] ?? 0) + Number(frac[3]) / den;
+    return Number.isFinite(v) ? (frac[1] ? -v : v) : Number.NaN;
+  }
   if (!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return Number.NaN;
   const n = Number(t);
   return Number.isFinite(n) ? n : Number.NaN;
+}
+
+/** Keystroke cleanup for fields that accept fractions: digits . / - and spaces. */
+export function sanitizeFractionInput(raw: string, allowNegative = false): string {
+  let s = raw.replace(/,/g, '.').replace(/[^0-9./\- ]/g, '').replace(/\s+/g, ' ');
+  if (!allowNegative) s = s.replace(/^-+/, '');
+  return s.replace(/^\s+/, '');
+}
+
+/**
+ * Put a fraction chip into the entry: "" → "3/8", "1" → "1-3/8", "1-1/2" → "1-3/8", "1.5" → "3/8".
+ */
+export function applyFraction(text: string, frac: string): string {
+  const m = /^(-?\d+)(?:[ -]\d+\/\d+|\/\d+)?$/.exec(text.trim());
+  const whole = m && !/^-?\d+\/\d+$/.test(text.trim()) ? m[1] : '';
+  return whole ? `${whole}-${frac}` : frac;
 }
 
 /** Clean up raw keystrokes: keep digits and one decimal point (optionally a leading minus). */

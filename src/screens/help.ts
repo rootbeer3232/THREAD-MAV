@@ -49,7 +49,10 @@ const topics: { id: string; title: string; body: string[] }[] = [
   {
     id: 'units',
     title: 'Inch and metric',
-    body: ['Every result shows both systems, blue for inch and red for metric, from the same underlying number (1 in = 25.4 mm exactly). There is no convert step.'],
+    body: [
+      'Every result shows both systems, blue for inch and red for metric, from the same underlying number (1 in = 25.4 mm exactly). There is no convert step.',
+      'Inch fields also take fractions. Tap a/b above the field for a fraction pad (type 1, then tap 3/8 for 1-3/8), or type 3/8 or 1-1/2 directly. The field shows the decimal and metric equivalent as you go.',
+    ],
   },
   {
     id: 'disclaimer',
