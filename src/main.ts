@@ -7,6 +7,7 @@ import { mountSpeeds } from './calculators/speeds/ui';
 import { mountTriangle } from './calculators/triangle/ui';
 import { mountTruePosition } from './calculators/trueposition/ui';
 import { mountThreadDepth } from './calculators/threaddepth/ui';
+import { mountBallPin } from './calculators/ballpin/ui';
 import { mountBoltCircle } from './calculators/boltcircle/ui';
 import { mountTaper } from './calculators/taper/ui';
 import { mountChamfer } from './calculators/chamfer/ui';
@@ -64,6 +65,7 @@ async function boot() {
     { route: 'triangle', title: 'Right Triangle', tab: 'calcs', back: 'calcs', render: (c, p) => mountTriangle(c, p) },
     { route: 'trueposition', title: 'True Position', tab: 'calcs', back: 'calcs', render: (c, p) => mountTruePosition(c, p) },
     { route: 'threaddepth', title: 'Thread Infeed', tab: 'calcs', back: 'calcs', render: (c, p) => mountThreadDepth(c, p) },
+    { route: 'ballpin', title: 'Ball / Pin', tab: 'calcs', back: 'calcs', render: (c, p) => mountBallPin(c, p) },
     { route: 'boltcircle', title: 'Bolt Circle', tab: 'calcs', back: 'calcs', render: (c, p) => mountBoltCircle(c, p) },
     { route: 'cskcbore', title: 'Countersink / Counterbore', tab: 'calcs', back: 'calcs', render: (c, p) => mountCskCbore(c, p) },
     { route: 'taper', title: 'Taper', tab: 'calcs', back: 'calcs', render: (c, p) => mountTaper(c, p) },
