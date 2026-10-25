@@ -1,5 +1,6 @@
 import type { AppContext, Screen } from '../../app/context';
 import { ENGINE_VERSION, VERSION_LABEL } from '../../app/version';
+import { inspectionPoints, inspectionText } from '../../core/contour/inspect';
 import { solveContour } from '../../core/contour/engine';
 import { CONTOUR_SCHEMA, CONTOUR_SCHEMA_MIN, type ContourProfile, type SegmentKind } from '../../core/contour/types';
 import { formatOptions } from '../../core/format';
@@ -369,6 +370,8 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
     const out: HTMLElement[] = [
       h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: async () => ctx.toast((await copyText(contourCoordinateText(sol, u, dp, form.side))) ? 'Coordinates copied' : 'Copy not available — use Share') } }, 'COPY COORDINATES'),
     ];
+    const insp = inspectionPoints(sol);
+    if (insp) out.push(h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: async () => ctx.toast((await copyText(inspectionText(insp, u, dp))) ? 'Inspection list copied' : 'Copy not available — use Share') } }, 'COPY INSPECTION LIST'));
     sol.segments.forEach((seg, i) => {
       const t = seg.taper;
       const a = sol.points[i];
