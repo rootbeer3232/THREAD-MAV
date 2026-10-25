@@ -2057,3 +2057,22 @@ input[type='search'].text-input {
   grid-template-columns: 1fr 1fr;
   gap: 10px;
 }
+
+/* ---------- shim inventory rows ---------- */
+.shim-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 44px;
+  gap: 8px;
+  align-items: end;
+}
+.shim-row .field-label:empty {
+  display: none;
+}
+.shim-row .num-input {
+  font-size: 20px;
+  padding: 0 8px;
+}
+.shim-row .icon-btn {
+  height: 52px;
+  font-size: 26px;
+}

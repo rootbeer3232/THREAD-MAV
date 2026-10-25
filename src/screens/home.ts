@@ -151,6 +151,7 @@ export function homeScreen(ctx: AppContext): Screen {
         qa('CHAMFER', 'calc', () => ctx.go('chamfer')),
         qa('RADIUS / CHORD', 'calc', () => ctx.go('arc')),
         qa('CONTOUR IQ', 'calc', () => ctx.go('contour')),
+        qa('SHIM STACK', 'calc', () => ctx.go('shim')),
         qa('ALL TOOLS', 'calc', () => ctx.go('calcs')),
       ),
     ),
