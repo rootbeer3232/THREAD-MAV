@@ -298,3 +298,71 @@ describe('contour — corner radii (Gate C1)', () => {
     expect(Object.values(r.points[1]!.arc!).every((v) => typeof v !== 'number' || Number.isFinite(v))).toBe(true);
   });
 });
+
+describe('contour — radius into a taper (Gate C2)', () => {
+  // inch part in mm: straight Ø1.000 for 1.000, then 45° taper growing to Ø2.000 (length .500)
+  const I = 25.4;
+  const base = (R: number | null) => prof2('od', [P(1 * I, 0), P(1 * I, -1 * I, R), P(2 * I, -1.5 * I)], [S('straight'), T({})]);
+  it('hand-checked: R.25 at straight→45° taper (concave)', () => {
+    const r = solveContour(base(0.25 * I));
+    expect(r.status).toBe('green');
+    const a = r.points[1]!.arc!;
+    const t = 0.25 * Math.tan(Math.PI / 8); // .103553
+    near(a.tangentLength, t * I);
+    near(a.start.x, 1.0 * I);
+    near(a.start.z, -(1 - t) * I);
+    near(a.end.x, (1 + 2 * t * Math.sin(Math.PI / 4)) * I);
+    near(a.end.z, -(1 + t * Math.cos(Math.PI / 4)) * I);
+    near(a.center.x, 1.5 * I);
+    near(a.center.z, -(1 - t) * I);
+    expect(a.turn).toBe('cw');
+    expect(a.convex).toBe(false);
+    near(a.sweepDeg, 45);
+  });
+  it('arc end lies on the taper line and the radius is exact', () => {
+    const a = solveContour(base(0.25 * I)).points[1]!.arc!;
+    // taper line: from (z=-1I, r=.5I) direction (-cos45, +sin45); end point must satisfy r - .5I = -(z + 1I)
+    near(a.end.x / 2 - 0.5 * I, -(a.end.z + 1 * I));
+    near(Math.hypot(a.end.z - a.center.z, (a.end.x - a.center.x) / 2), 0.25 * I);
+    near(Math.hypot(a.start.z - a.center.z, (a.start.x - a.center.x) / 2), 0.25 * I);
+  });
+  it('radius leaving a taper into a straight (convex OD)', () => {
+    // 45° taper from Ø1 up to Ø2 then straight Ø2: corner at the top of the taper
+    const r = solveContour(prof2('od', [P(1 * I, 0), P(2 * I, -0.5 * I, 0.25 * I), P(2 * I, -2 * I)], [T({}), S('straight')]));
+    expect(r.status).toBe('green');
+    const a = r.points[1]!.arc!;
+    expect(a.convex).toBe(true);
+    expect(a.turn).toBe('ccw');
+    near(a.sweepDeg, 45);
+    near(a.end.x, 2 * I); // finishes tangent on the Ø2 straight
+  });
+  it('ID: radius into a taper flips convex/concave', () => {
+    const od = solveContour(base(0.25 * I)).points[1]!.arc!;
+    const id = solveContour({ ...base(0.25 * I), side: 'id' }).points[1]!.arc!;
+    expect(id.convex).toBe(!od.convex);
+    near(id.center.x, od.center.x);
+  });
+  it('taper solved from two values, then the radius is placed on it', () => {
+    // length and angle given; diameter change solved; radius still resolves
+    const r = solveContour(prof2('od', [P(20, 0), P(20, -10, 3), P(null, null)], [S('straight'), T({ length: 5, angle: 45, dir: 1 })]));
+    expect(r.status).toBe('green');
+    expect(r.points[2]!.x).toBeCloseTo(30, 6);
+    expect(r.points[1]!.arc).toBeDefined();
+  });
+  it('red when the radius is too big for a short taper', () => {
+    const r = solveContour(prof2('od', [P(20, 0), P(20, -10, 20), P(21, -10.5)], [S('straight'), T({})]));
+    expect(r.status).toBe('red');
+    expect(r.messages.some((m) => /too large/.test(m.text))).toBe(true);
+  });
+  it('taper direction unknown stays amber (never guessed)', () => {
+    const r = solveContour(prof2('od', [P(20, 0), P(20, -10, 3), P(null, null)], [S('straight'), T({ length: 5, angle: 45 })]));
+    expect(r.status).toBe('amber');
+  });
+  it('taper into taper (both angled) fillets with the turn angle only', () => {
+    // 45° out then 45° back in: 90° turn
+    const r = solveContour(prof2('od', [P(10, 0), P(20, -5, 2), P(10, -10)], [T({}), T({})]));
+    expect(r.status).toBe('green');
+    near(r.points[1]!.arc!.sweepDeg, 90);
+    near(r.points[1]!.arc!.tangentLength, 2);
+  });
+});

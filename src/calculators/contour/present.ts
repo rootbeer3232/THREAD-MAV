@@ -10,7 +10,7 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     .filter((m) => m.level !== 'info')
     .map((m) => ({ tone: m.level === 'red' ? ('warn' as const) : ('warn' as const), text: m.level === 'red' ? `STOP — ${m.text}` : m.text }));
   const info: Presentation['messages'] = [
-    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps, shoulders, tapers and corner radii. Dimensions are to the sharp corner; arc points are the tangent points. No G-code yet.' },
+    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps, shoulders, tapers and corner radii (including radius into a taper). Dimensions are to the sharp corner; arc points are the tangent points. No G-code yet.' },
   ];
 
   const level = sol.status;
