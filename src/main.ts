@@ -28,6 +28,7 @@ import { calculatorsScreen } from './screens/calcs';
 import { helpScreen } from './screens/help';
 import { homeScreen } from './screens/home';
 import { historyScreen, savedScreen } from './screens/lists';
+import { jobSheetScreen } from './screens/jobsheet';
 import { drillChartScreen, threadChartScreen } from './screens/charts';
 import { settingsScreen } from './screens/settings';
 
@@ -73,6 +74,7 @@ async function boot() {
     { route: 'shim', title: 'Shim Stack', tab: 'calcs', back: 'calcs', render: (c, p) => mountShim(c, p) },
     { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
     { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
+    { route: 'jobsheet', title: 'Job Sheet', tab: 'saved', back: 'saved', render: (c, p) => jobSheetScreen(c, p) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },
     { route: 'history', title: 'History', tab: 'history', render: (c) => historyScreen(c) },
     { route: 'settings', title: 'Settings', tab: 'settings', render: (c) => settingsScreen(c) },

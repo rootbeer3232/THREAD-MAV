@@ -21,12 +21,13 @@ export function createActionBar(opts: {
   const indicators = h('div', { class: 'indicators' });
   const saveBtn = h('button', { class: 'btn btn-primary btn-save', type: 'button' });
   const newBtn = h('button', { class: 'btn btn-secondary', type: 'button' }, 'NEW CALC');
+  const jobBtn = h('button', { class: 'btn btn-secondary btn-wide', type: 'button' }, 'JOB SHEET / PRINT PDF');
   const favBtn = h('button', { class: 'btn btn-action act-fav', type: 'button' });
   const noteBtn = h('button', { class: 'btn btn-action act-note', type: 'button' });
   const shareBtn = h('button', { class: 'btn btn-action act-share', type: 'button' });
   const act = (ic: 'star' | 'note' | 'share', title: string, sub: string) => [icon(ic, 26), h('span', { class: 'act-t' }, title), h('small', { class: 'act-s' }, sub)];
   shareBtn.replaceChildren(...act('share', 'SHARE / EXPORT', 'SEND OR COPY'));
-  const el = h('div', { class: 'action-bar' }, h('div', { class: 'btn-row' }, newBtn, saveBtn), h('div', { class: 'action-grid' }, favBtn, noteBtn, shareBtn), indicators);
+  const el = h('div', { class: 'action-bar' }, h('div', { class: 'btn-row' }, newBtn, saveBtn), h('div', { class: 'action-grid' }, favBtn, noteBtn, shareBtn), jobBtn, indicators);
 
   const refresh = () => {
     const rec = getRecord();
@@ -65,6 +66,10 @@ export function createActionBar(opts: {
   shareBtn.addEventListener('click', () => {
     const rec = getRecord();
     void shareText(opts.shareTitle(), opts.getShareText(rec?.note ?? ''), ctx.toast);
+  });
+  jobBtn.addEventListener('click', () => {
+    const rec = getRecord();
+    if (rec) ctx.go('jobsheet', { r: rec.id });
   });
   newBtn.addEventListener('click', opts.onNew);
 

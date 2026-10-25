@@ -203,7 +203,7 @@ export async function mountShim(ctx: AppContext, params: URLSearchParams): Promi
           title: presentation.title,
           subtitle: presentation.subtitle,
           inputs: { form },
-          summary: toSummary(presentation, fo).slice(0, 5),
+          summary: toSummary(presentation, fo).slice(0, 16),
           engine: ENGINE_VERSION,
         }));
     }
