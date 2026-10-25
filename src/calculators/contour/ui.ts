@@ -4,6 +4,7 @@ import { solveContour } from '../../core/contour/engine';
 import { CONTOUR_SCHEMA, CONTOUR_SCHEMA_MIN, type ContourProfile, type SegmentKind } from '../../core/contour/types';
 import { formatOptions } from '../../core/format';
 import { fnv1a } from '../../core/hash';
+import { copyText } from '../../app/share';
 import { parseDecimal } from '../../core/numeric';
 import { toShareText, toSummary } from '../../core/present-common';
 import { MM_PER_INCH, type Unit } from '../../core/units';
@@ -11,7 +12,8 @@ import type { CalcRecord } from '../../storage/types';
 import { createActionBar } from '../../ui/action-bar';
 import { type NumericField, numericField, renderPresentation, segmented } from '../../ui/components';
 import { h } from '../../ui/dom';
-import { presentContour } from './present';
+import { contourDiagram } from './diagram';
+import { contourCoordinateText, presentContour } from './present';
 
 /**
  * Form state keeps ONE canonical value per field (null = blank/unknown):
@@ -360,6 +362,30 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
     ];
   }
 
+  /** Gate F: hand solved data to the rest of Thread Mav (copy list; open a solved taper in the Taper calculator). */
+  function sendButtons(sol: ReturnType<typeof solveContour>, fo: ReturnType<typeof formatOptions>): HTMLElement[] {
+    const u = form.unit;
+    const dp = u === 'in' ? fo.inchDecimals : fo.metricDecimals;
+    const out: HTMLElement[] = [
+      h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: async () => ctx.toast((await copyText(contourCoordinateText(sol, u, dp, form.side))) ? 'Coordinates copied' : 'Copy not available — use Share') } }, 'COPY COORDINATES'),
+    ];
+    sol.segments.forEach((seg, i) => {
+      const t = seg.taper;
+      const a = sol.points[i];
+      const b = sol.points[i + 1];
+      if (seg.kind !== 'taper' || !t || t.length === null || t.dx === null || !a || !b || a.x === null || b.x === null) return;
+      const txt = (mm: number) => lengthText(mm, u);
+      out.push(
+        h('button', { class: 'btn btn-secondary btn-wide', type: 'button', on: { click: async () => {
+          const taperForm = { unit: u, largeText: txt(Math.max(a.x!, b.x!)), smallText: txt(Math.min(a.x!, b.x!)), lengthText: txt(t.length!), kind: 'perUnit', taperText: '', partText: '' };
+          await ctx.repo.setDraft('taper', { form: taperForm, calculated: false });
+          ctx.go('taper');
+        } } }, `OPEN TAPER P${i + 1}→P${i + 2} IN TAPER CALC`),
+      );
+    });
+    return out;
+  }
+
   async function calculate(opts: { silent?: boolean } = {}) {
     fields.forEach((f) => f.setError(null));
     formHost.querySelector<HTMLElement>('#err-banner')?.classList.remove('show');
@@ -399,7 +425,8 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
             engine: ENGINE_VERSION,
           }));
       }
-      resultHost.replaceChildren(renderPresentation(presentation, fo), ...jumpChips(sol.missing ?? []), bar.el);
+      const preview = contourDiagram(sol);
+      resultHost.replaceChildren(...(preview ? [h('div', { class: 'diagram-card card' }, preview)] : []), renderPresentation(presentation, fo), ...jumpChips(sol.missing ?? []), ...sendButtons(sol, fo), bar.el);
       bar.setRecord(record);
     } else {
       record = null;
