@@ -57,3 +57,41 @@ describe('numeric input', () => {
     expect(fmtFixed(1.29410, 4)).toBe('1.2941');
   });
 });
+
+import { applyFraction, sanitizeFractionInput } from '../src/core/numeric';
+describe('fraction entry', () => {
+  it('parses fractions and mixed numbers', () => {
+    expect(parseDecimal('3/8')).toBe(0.375);
+    expect(parseDecimal('1-1/2')).toBe(1.5);
+    expect(parseDecimal('1 1/2')).toBe(1.5);
+    expect(parseDecimal('11/16')).toBeCloseTo(0.6875, 12);
+    expect(parseDecimal('2-5/16')).toBeCloseTo(2.3125, 12);
+    expect(parseDecimal('-3/8')).toBe(-0.375);
+    expect(parseDecimal(' 7/8 ')).toBe(0.875);
+  });
+  it('rejects malformed fractions instead of guessing', () => {
+    for (const bad of ['1/0', '1/2/3', '1-/2', '/2', '3/', '1.5/2', '1--1/2', 'a/b', '1/ 2x']) expect(parseDecimal(bad)).toBeNaN();
+  });
+  it('plain decimals still parse as before', () => {
+    expect(parseDecimal('.005')).toBe(0.005);
+    expect(parseDecimal('1,5')).toBe(1.5);
+    expect(parseDecimal('1-')).toBeNaN();
+  });
+  it('keystroke cleanup keeps fraction characters only', () => {
+    expect(sanitizeFractionInput('1 1/2"')).toBe('1 1/2');
+    expect(sanitizeFractionInput('-3/8')).toBe('3/8');
+    expect(sanitizeFractionInput('-3/8', true)).toBe('-3/8');
+    expect(sanitizeFractionInput('abc')).toBe('');
+  });
+  it('fraction chips build mixed numbers', () => {
+    expect(applyFraction('', '3/8')).toBe('3/8');
+    expect(applyFraction('1', '3/8')).toBe('1-3/8');
+    expect(applyFraction('1-1/2', '3/8')).toBe('1-3/8');
+    expect(applyFraction('1/2', '5/8')).toBe('5/8');
+    expect(applyFraction('1.5', '1/4')).toBe('1/4');
+    expect(applyFraction('12', '1/16')).toBe('12-1/16');
+  });
+  it('fractions equal their decimals exactly', () => {
+    for (let n = 1; n < 64; n++) expect(parseDecimal(`${n}/64`)).toBe(n / 64);
+  });
+});

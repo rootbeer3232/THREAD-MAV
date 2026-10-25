@@ -83,7 +83,7 @@ export async function mountShim(ctx: AppContext, params: URLSearchParams): Promi
     saveDraft();
   };
   const num = (id: string, label: string, value: string, unit: string | null, onInput: (v: string) => void, placeholder = '') => {
-    const f = numericField({ id, label, value, unit, placeholder, onInput: (v) => { onInput(v); invalidate(); }, onEnter: () => void calculate() });
+    const f = numericField({ id, label, value, unit, placeholder, fraction: id === 'target', onInput: (v) => { onInput(v); invalidate(); }, onEnter: () => void calculate() });
     fields.set(id, f);
     return f;
   };
