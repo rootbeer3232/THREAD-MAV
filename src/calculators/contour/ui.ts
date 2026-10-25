@@ -424,7 +424,7 @@ export async function mountContour(ctx: AppContext, params: URLSearchParams): Pr
             title: presentation.title,
             subtitle: presentation.subtitle,
             inputs: { form },
-            summary: toSummary(presentation, fo).slice(0, 4),
+            summary: toSummary(presentation, fo).slice(0, 60),
             engine: ENGINE_VERSION,
           }));
       }

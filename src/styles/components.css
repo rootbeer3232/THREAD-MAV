@@ -2134,3 +2134,144 @@ input[type='search'].text-input {
   color: var(--blue);
   font-size: 22px;
 }
+
+/* ---------- job sheet / print ---------- */
+.js-field {
+  display: block;
+  margin-bottom: 10px;
+}
+.js-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.js-input {
+  width: 100%;
+  min-height: 48px;
+  font-size: 18px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+}
+.js-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow: auto;
+}
+.js-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-height: 52px;
+  padding: 6px 4px;
+}
+.js-check {
+  width: 26px;
+  height: 26px;
+  flex: none;
+}
+.js-row-t {
+  display: flex;
+  flex-direction: column;
+}
+.js-row-t small {
+  color: var(--text-dim);
+}
+.job-sheet {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+}
+.js-title {
+  font-size: 20px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+.js-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 14px;
+  margin-bottom: 14px;
+}
+.js-meta small {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+.js-calc {
+  margin-bottom: 16px;
+  break-inside: avoid;
+}
+.js-calc h3 {
+  font-size: 18px;
+  font-weight: 900;
+}
+.js-sub {
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.js-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+.js-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.js-alt {
+  color: var(--text-dim);
+  text-align: right;
+}
+.js-note {
+  margin-top: 6px;
+  font-style: italic;
+}
+.js-foot {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 12px;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .app-header,
+  .titlebar,
+  .tabbar,
+  .update-banner,
+  .offline-row,
+  .no-print,
+  .toast {
+    display: none !important;
+  }
+  .app-main,
+  .screen {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .job-sheet {
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+  .job-sheet,
+  .job-sheet * {
+    color: #000 !important;
+    background: transparent !important;
+  }
+  .js-table td {
+    border-bottom: 1px solid #999;
+  }
+}

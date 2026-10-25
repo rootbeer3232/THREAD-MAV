@@ -213,7 +213,7 @@ export async function mountTruePosition(ctx: AppContext, params: URLSearchParams
           title: presentation.title,
           subtitle: presentation.subtitle,
           inputs: { form },
-          summary: toSummary(presentation, fo).slice(0, 3),
+          summary: toSummary(presentation, fo).slice(0, 16),
           engine: ENGINE_VERSION,
         }));
     }

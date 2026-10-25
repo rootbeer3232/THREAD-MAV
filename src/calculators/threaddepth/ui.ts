@@ -196,7 +196,7 @@ export async function mountThreadDepth(ctx: AppContext, params: URLSearchParams)
           title: presentation.title,
           subtitle: presentation.subtitle,
           inputs: { form },
-          summary: toSummary(presentation, fo).slice(0, 3),
+          summary: toSummary(presentation, fo).slice(0, 40),
           engine: ENGINE_VERSION,
         }));
     }
