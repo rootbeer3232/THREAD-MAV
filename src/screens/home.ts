@@ -150,6 +150,7 @@ export function homeScreen(ctx: AppContext): Screen {
         qa('DRILL POINT', 'calc', () => ctx.go('drillpoint')),
         qa('CHAMFER', 'calc', () => ctx.go('chamfer')),
         qa('RADIUS / CHORD', 'calc', () => ctx.go('arc')),
+        qa('CONTOUR IQ', 'calc', () => ctx.go('contour')),
         qa('ALL TOOLS', 'calc', () => ctx.go('calcs')),
       ),
     ),

@@ -2014,3 +2014,46 @@ input[type='search'].text-input {
   font-weight: 700;
   color: var(--red);
 }
+
+/* ---------- Contour IQ status lights ---------- */
+.banner-green {
+  background: #1c6b33;
+}
+.banner-amber {
+  background: #8a5a00;
+  color: #fff4dc;
+}
+.banner-red {
+  background: #9b1c1c;
+  color: #fff;
+  letter-spacing: 0.08em;
+}
+.contour-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.contour-seg {
+  border-left: 4px solid var(--border-strong);
+  padding-left: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.contour-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+.contour-row .field-label {
+  font-size: 14px;
+}
+.contour-row .num-input {
+  font-size: 21px;
+  padding: 0 8px;
+}
+.contour-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}

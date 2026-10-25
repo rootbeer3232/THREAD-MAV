@@ -233,7 +233,7 @@ export function renderRow(r: ResultRow, o: FormatOptions): HTMLElement {
 export function renderPresentation(p: Presentation, o: FormatOptions): HTMLElement {
   const root = h('div', { class: 'results' });
   root.append(
-    h('div', { class: 'banner-ok', role: 'status' }, icon('check', 20), h('span', null, 'Calculation Complete')),
+    h('div', { class: `banner-ok ${p.status ? `banner-${p.status.level}` : ''}`, role: 'status' }, icon('check', 20), h('span', null, p.status?.text ?? 'Calculation Complete')),
     h('div', { class: 'res-head' }, h('div', { class: 'res-title' }, p.title), h('div', { class: 'res-sub' }, p.subtitle)),
   );
   if (p.badges.length) root.append(h('div', { class: 'badges' }, ...p.badges.map(badge)));
@@ -244,7 +244,7 @@ export function renderPresentation(p: Presentation, o: FormatOptions): HTMLEleme
     const hasXy = rest.some((r) => r.xy);
     const card = h('section', { class: `card res-card ${hasDual ? '' : 'no-cols'}` });
     if (hasXy) {
-      card.append(h('div', { class: 'xy-head' }, h('h3', { class: 'card-title' }, sec.title ?? ''), h('span', { class: 'col-h' }, 'X'), h('span', { class: 'col-h' }, 'Y')), h('div', { class: 'xy-sub' }, h('span', { class: 'col-in' }, 'in'), ' above ', h('span', { class: 'col-mm' }, 'mm')));
+      card.append(h('div', { class: 'xy-head' }, h('h3', { class: 'card-title' }, sec.title ?? ''), h('span', { class: 'col-h' }, sec.xyCols?.[0] ?? 'X'), h('span', { class: 'col-h' }, sec.xyCols?.[1] ?? 'Y')), h('div', { class: 'xy-sub' }, h('span', { class: 'col-in' }, 'in'), ' above ', h('span', { class: 'col-mm' }, 'mm')));
     } else if (sec.title || hasDual) {
       card.append(
         h(
