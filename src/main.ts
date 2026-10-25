@@ -9,6 +9,7 @@ import { mountBoltCircle } from './calculators/boltcircle/ui';
 import { mountTaper } from './calculators/taper/ui';
 import { mountChamfer } from './calculators/chamfer/ui';
 import { mountArc } from './calculators/arc/ui';
+import { mountContour } from './calculators/contour/ui';
 import { mountDrillPoint } from './calculators/drillpoint/ui';
 import { mountCskCbore } from './calculators/cskcbore/ui';
 import { DEFAULT_SETTINGS, type Settings } from './core/settings-model';
@@ -63,6 +64,7 @@ async function boot() {
     { route: 'drillpoint', title: 'Drill Point Depth', tab: 'calcs', back: 'calcs', render: (c, p) => mountDrillPoint(c, p) },
     { route: 'chamfer', title: 'Chamfer', tab: 'calcs', back: 'calcs', render: (c, p) => mountChamfer(c, p) },
     { route: 'arc', title: 'Radius / Chord / Sagitta', tab: 'calcs', back: 'calcs', render: (c, p) => mountArc(c, p) },
+    { route: 'contour', title: 'Contour IQ', tab: 'calcs', back: 'calcs', render: (c, p) => mountContour(c, p) },
     { route: 'threadchart', title: 'Thread Chart', tab: 'calcs', back: 'calcs', render: (c) => threadChartScreen(c) },
     { route: 'drillchart', title: 'Drill Chart', tab: 'calcs', back: 'calcs', render: (c) => drillChartScreen(c) },
     { route: 'saved', title: 'Saved', tab: 'saved', render: (c) => savedScreen(c) },

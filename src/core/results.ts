@@ -33,12 +33,16 @@ export interface ResultRow {
 
 export interface ResultSection {
   title?: string;
+  /** Column headers for X/Y coordinate tables (default X / Y). */
+  xyCols?: [string, string];
   /** Column headers when the two values are not in / mm. */
   cols?: [{ t: string; s: string }, { t: string; s: string }];
   rows: ResultRow[];
 }
 
 export interface Presentation {
+  /** Overrides the default green "Calculation Complete" banner (Contour IQ status lights). */
+  status?: { level: 'green' | 'amber' | 'red'; text: string };
   /** e.g. "3/8-16 UNC" */
   title: string;
   /** e.g. "Class 2A · External" */
