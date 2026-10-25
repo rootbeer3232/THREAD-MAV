@@ -98,7 +98,7 @@ describe('contour — status: amber / red', () => {
   it('structural errors fail closed', () => {
     expect(solveContour(prof([P(1, 0)], [])).status).toBe('red');
     expect(solveContour(prof([P(1, 0), P(null, null)], [])).status).toBe('red');
-    expect(solveContour({ ...prof([P(1, 0), P(null, null)], [S('straight', 1)]), schema: 99 as 1 }).status).toBe('red');
+    expect(solveContour({ ...prof([P(1, 0), P(null, null)], [S('straight', 1)]), schema: 99 as 2 }).status).toBe('red');
     expect(solveContour(prof([P(Number.NaN, 0), P(null, null)], [S('straight', 1)])).status).toBe('red');
   });
 });
@@ -128,5 +128,87 @@ describe('contour — units and precision', () => {
     }
     const r = solveContour(prof(pts, segs));
     expect(r.status).toBe('green');
+  });
+});
+
+const T = (o: Partial<ContourSegment>): ContourSegment => ({ kind: 'taper', value: null, ...o });
+const deg = (r: number) => (r * 180) / Math.PI;
+
+describe('contour — tapers (Gate B2)', () => {
+  it('45° taper: length .25 grows the diameter by .50 (radius .25)', () => {
+    const r = solveContour(prof([P(25.4, 0), P(null, null)], [T({ length: 6.35, angle: 45, dir: 1 })]));
+    expect(r.status).toBe('green');
+    expect(r.points[1]!.x).toBeCloseTo(25.4 + 12.7, 9);
+    expect(r.points[1]!.z).toBeCloseTo(-6.35, 12);
+  });
+  it('direction shrink gives a smaller diameter', () => {
+    const r = solveContour(prof([P(50.8, 0), P(null, null)], [T({ length: 10, angle: 30, dir: -1 })]));
+    expect(r.points[1]!.x).toBeCloseTo(50.8 - 2 * 10 * Math.tan((30 * Math.PI) / 180), 9);
+  });
+  it('angle from length and diameter change', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 25.4, dx: 5.08 })]));
+    expect(r.segments[0]!.taper!.angle).toBeCloseTo(deg(Math.atan(5.08 / (2 * 25.4))), 9); // 5.7106°
+    expect(r.segments[0]!.taper!.angleSource).toBe('solved');
+    expect(r.points[1]!.x).toBeCloseTo(25.08, 9);
+  });
+  it('length from diameter change and angle', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ dx: 12.7, angle: 45 })]));
+    expect(r.segments[0]!.taper!.length).toBeCloseTo(6.35, 9);
+    expect(r.points[1]!.z).toBeCloseTo(-6.35, 9);
+  });
+  it('diameter change from end diameters, Z from baseline dims (print style)', () => {
+    const r = solveContour(prof([P(20, 0), P(30, -10)], [T({ angle: null })]));
+    expect(r.status).toBe('green');
+    expect(r.segments[0]!.taper!.dx).toBeCloseTo(10, 12);
+    expect(r.segments[0]!.taper!.angle).toBeCloseTo(deg(Math.atan(10 / 20)), 9);
+  });
+  it('solves backward from the far end', () => {
+    const r = solveContour(prof([P(null, null), P(30, -10)], [T({ length: 10, dx: 10 })]));
+    expect(r.points[0]).toMatchObject({ z: 0 });
+    expect(r.points[0]!.x).toBeCloseTo(20, 9);
+  });
+  it('mixed straight → taper → shoulder → straight, all from P0', () => {
+    const r = solveContour(prof([P(20, 0), P(null, -10), P(30, -20), P(null, null), P(null, -35)], [S('straight'), T({}), S('shoulder', -5), S('straight')]));
+    expect(r.status).toBe('green');
+    expect(r.points.map((p) => [p.x, p.z])).toEqual([[20, 0], [20, -10], [30, -20], [25, -20], [25, -35]]);
+  });
+  it('amber: angle and length but no direction or end diameter — asks for the direction', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 10, angle: 20 })]));
+    expect(r.status).toBe('amber');
+    expect(r.messages.some((m) => /BIGGER or SMALLER/.test(m.text))).toBe(true);
+    expect(r.points[1]!.z).toBe(-10);
+    expect(r.points[1]!.x).toBeNull();
+  });
+  it('amber: only one of length / dx / angle is known', () => {
+    expect(solveContour(prof([P(20, 0), P(null, null)], [T({ angle: 20, dir: 1 })])).status).toBe('amber');
+  });
+  it('red: direction contradicts the diameters', () => {
+    expect(solveContour(prof([P(20, 0), P(30, -10)], [T({ dir: -1 })])).status).toBe('red');
+  });
+  it('red: length, dx and angle that do not agree', () => {
+    expect(solveContour(prof([P(20, 0), P(null, null)], [T({ length: 10, dx: 10, angle: 30 })])).status).toBe('red');
+  });
+  it('accepts rounded print values that agree within .0005"', () => {
+    // 15° over 1.000": exact dx = .53590; print says .536 (rounded)
+    const r = solveContour(prof([P(25.4, 0), P(null, null)], [T({ length: 25.4, dx: 0.536 * 25.4, angle: 15 })]));
+    expect(r.status).toBe('green');
+    expect(r.messages.some((m) => /print rounding/.test(m.text))).toBe(true);
+  });
+  it('red: 0° (that is a straight) and 90° (that is a shoulder)', () => {
+    expect(solveContour(prof([P(20, 0), P(null, -5)], [T({ angle: 0, dx: 1 })])).status).toBe('red');
+    expect(solveContour(prof([P(20, 0), P(null, null)], [T({ length: 5, angle: 90, dir: 1 })])).status).toBe('red');
+  });
+  it('red: zero length, no diameter change, negative length, negative diameter', () => {
+    expect(solveContour(prof([P(20, 0), P(25, 0)], [T({})])).status).toBe('red');
+    expect(solveContour(prof([P(20, 0), P(20, -5)], [T({})])).status).toBe('red');
+    expect(solveContour(prof([P(20, -5), P(25, 0)], [T({})])).status).toBe('red');
+    expect(solveContour(prof([P(10, 0), P(null, null)], [T({ length: 10, angle: 60, dir: -1 })])).status).toBe('red');
+  });
+  it('v1 (Test 1.5) saved profiles still solve', () => {
+    expect(solveContour({ ...prof([P(20, 0), P(null, -5)], [S('straight')]), schema: 1 as 2 }).status).toBe('green');
+  });
+  it('never NaN/Infinity from taper math', () => {
+    const r = solveContour(prof([P(20, 0), P(null, null)], [T({ length: 1e-3, angle: 89.999, dir: 1 })]));
+    for (const p of r.points) for (const v of [p.x, p.z]) expect(v === null || Number.isFinite(v)).toBe(true);
   });
 });

@@ -4,8 +4,12 @@
  * ones, and says plainly when something is missing (amber) or contradictory/impossible (red).
  */
 import {
+  CONTOUR_SCHEMA_MIN,
   CONTOUR_SCHEMA,
   CONTOUR_TOL_MM,
+  CONTOUR_TRIG_TOL_MM,
+  type SolvedTaper,
+  type TaperDir,
   type ContourMessage,
   type ContourProfile,
   type ContourSolution,
@@ -22,18 +26,27 @@ export function solveContour(profile: ContourProfile): ContourSolution {
   const n = profile.points.length;
 
   // ---------- structural validation ----------
-  if (profile.schema !== CONTOUR_SCHEMA) {
+  if (!(profile.schema >= CONTOUR_SCHEMA_MIN && profile.schema <= CONTOUR_SCHEMA)) {
     return fail('This profile was saved by a different version and cannot be solved safely.');
   }
   if (n < 2 || profile.segments.length !== n - 1) {
     return fail('A profile needs at least two points joined by one segment.');
   }
-  const bad = [...profile.points.flatMap((p) => [p.x, p.z]), ...profile.segments.map((s) => s.value)].some((v) => v !== null && !Number.isFinite(v));
+  const bad = [...profile.points.flatMap((p) => [p.x, p.z]), ...profile.segments.flatMap((s) => [s.value, s.length ?? null, s.dx ?? null, s.angle ?? null])].some((v) => v !== null && !Number.isFinite(v));
   if (bad) return fail('A value is not a valid number.');
 
   const X: Known[] = profile.points.map((p) => p.x);
   const Z: Known[] = profile.points.map((p) => p.z);
   const V: Known[] = profile.segments.map((s) => s.value);
+  // taper working values (index = segment); only meaningful where kind === 'taper'
+  const Len: Known[] = profile.segments.map((s) => (s.kind === 'taper' ? (s.length ?? null) : null));
+  const Dx: Known[] = profile.segments.map((s) => (s.kind === 'taper' ? (s.dx ?? null) : null));
+  const Ang: Known[] = profile.segments.map((s) => (s.kind === 'taper' ? (s.angle ?? null) : null));
+  const Dir: TaperDir[] = profile.segments.map((s) => (s.kind === 'taper' ? (s.dir ?? null) : null));
+  const Mag: Known[] = profile.segments.map(() => null);
+  const lenGiven = Len.map((v) => v !== null);
+  const dxGiven = Dx.map((v) => v !== null);
+  const angGiven = Ang.map((v) => v !== null);
   const xGiven = X.map((v) => v !== null);
   const zGiven = Z.map((v) => v !== null);
   const vGiven = V.map((v) => v !== null);
@@ -77,6 +90,50 @@ export function solveContour(profile: ContourProfile): ContourSolution {
           V[i] = Z[a]! - Z[b]!;
           changed = true;
         }
+      } else if (seg.kind === 'taper') {
+        // axial length from Z (same bookkeeping as a straight)
+        if (Len[i] !== null) {
+          if (Z[a] !== null) put(Z, b, Z[a]! - Len[i]!, `Position ${label(b)} (Z)`);
+          if (Z[b] !== null) put(Z, a, Z[b]! + Len[i]!, `Position ${label(a)} (Z)`);
+        } else if (Z[a] !== null && Z[b] !== null) {
+          Len[i] = Z[a]! - Z[b]!;
+          changed = true;
+        }
+        // signed diameter change from X (same bookkeeping as a shoulder)
+        if (Dx[i] !== null) {
+          if (X[a] !== null) put(X, b, X[a]! + Dx[i]!, `Diameter ${label(b)}`);
+          if (X[b] !== null) put(X, a, X[b]! - Dx[i]!, `Diameter ${label(a)}`);
+        } else if (X[a] !== null && X[b] !== null) {
+          Dx[i] = X[b]! - X[a]!;
+          changed = true;
+        }
+        // direction follows the sign of the diameter change
+        if (Dx[i] !== null && Math.abs(Dx[i]!) > CONTOUR_TOL_MM) {
+          const sd: 1 | -1 = Dx[i]! > 0 ? 1 : -1;
+          if (Dir[i] === null) {
+            Dir[i] = sd;
+            changed = true;
+          } else if (Dir[i] !== sd) {
+            red(`Taper ${name}: the diameter ${sd > 0 ? 'grows' : 'shrinks'} toward the chuck by the numbers, but you set it to ${Dir[i]! > 0 ? 'grow' : 'shrink'}. Check the direction.`);
+          }
+        }
+        // trig relationship: |dx| = 2 · L · tan(angle from axis) — any two give the third
+        const mag: Known = Dx[i] !== null ? Math.abs(Dx[i]!) : (Mag[i] ?? null);
+        const tanA = Ang[i] !== null && Ang[i]! > 0 && Ang[i]! < 90 ? Math.tan((Ang[i]! * Math.PI) / 180) : null;
+        if (Len[i] !== null && Len[i]! > 0 && mag !== null && mag > CONTOUR_TOL_MM && Ang[i] === null) {
+          Ang[i] = (Math.atan(mag / (2 * Len[i]!)) * 180) / Math.PI;
+          changed = true;
+        } else if (Len[i] !== null && tanA !== null && mag === null) {
+          Mag[i] = 2 * Len[i]! * tanA;
+          changed = true;
+        } else if (mag !== null && mag > CONTOUR_TOL_MM && tanA !== null && Len[i] === null) {
+          Len[i] = mag / (2 * tanA);
+          changed = true;
+        }
+        if (Mag[i] !== null && Dx[i] === null && Dir[i] !== null) {
+          Dx[i] = Dir[i]! * Mag[i]!;
+          changed = true;
+        }
       } else {
         // shoulder: Z is constant across it
         if (Z[a] !== null) put(Z, b, Z[a]!, `Position of shoulder ${name} (Z)`);
@@ -114,10 +171,47 @@ export function solveContour(profile: ContourProfile): ContourSolution {
     }
   });
 
+  profile.segments.forEach((seg, i) => {
+    if (seg.kind !== 'taper') return;
+    const name = `${label(i)}→${label(i + 1)}`;
+    const L = Len[i] ?? null;
+    const dx = Dx[i] ?? null;
+    const ang = Ang[i] ?? null;
+    if (L !== null && L <= CONTOUR_TOL_MM) red(L < -CONTOUR_TOL_MM ? `Taper ${name} would run away from the chuck (negative length). Check the Z values.` : `Taper ${name} has zero length.`);
+    if (dx !== null && Math.abs(dx) <= CONTOUR_TOL_MM) red(`Taper ${name} has no diameter change — use a straight instead.`);
+    if (ang !== null && ang <= 0) red(`Taper ${name}: an angle of 0° is a straight — use a straight segment.`);
+    if (ang !== null && ang >= 90) red(`Taper ${name}: an angle of 90° from the axis is a shoulder — use a shoulder segment.`);
+    // over-determined: length, diameter change and angle must agree (within print rounding)
+    const mag: Known = dx !== null ? Math.abs(dx) : (Mag[i] ?? null);
+    if (L !== null && L > 0 && ang !== null && ang > 0 && ang < 90 && mag !== null) {
+      const expect = 2 * L * Math.tan((ang * Math.PI) / 180);
+      const diff = Math.abs(expect - mag);
+      if (diff > CONTOUR_TRIG_TOL_MM) {
+        red(`Taper ${name}: length, diameter change and angle don’t agree — that angle over that length gives a ${fmt(expect)} diameter change, not ${fmt(mag)}. Check the print.`);
+      } else if (diff > CONTOUR_TOL_MM && lenGiven[i] && dxGiven[i] && angGiven[i]) {
+        messages.push({ level: 'info', text: `Taper ${name}: the three values agree within print rounding (${fmt(diff)}).` });
+      }
+    }
+  });
+
   // ---------- assemble ----------
   const src = (known: boolean, value: Known): Source => (value === null ? 'unknown' : known ? 'given' : 'solved');
   const points = X.map((x, i) => ({ x, z: Z[i]!, xSource: src(xGiven[i]!, x), zSource: src(zGiven[i]!, Z[i]!) }));
-  const segments = profile.segments.map((s, i) => ({ kind: s.kind, value: V[i]!, source: src(vGiven[i]!, V[i]!) }));
+  const segments = profile.segments.map((s, i) => {
+    const base = { kind: s.kind, value: V[i] ?? null, source: src(vGiven[i] ?? false, V[i] ?? null) };
+    if (s.kind !== 'taper') return base;
+    const dxv = Dx[i] ?? null;
+    const taper: SolvedTaper = {
+      length: Len[i] ?? null,
+      dx: dxv,
+      angle: Ang[i] ?? null,
+      dir: Dir[i] ?? null,
+      lengthSource: src(lenGiven[i] ?? false, Len[i] ?? null),
+      dxSource: src(dxGiven[i] ?? false, dxv),
+      angleSource: src(angGiven[i] ?? false, Ang[i] ?? null),
+    };
+    return { ...base, taper };
+  });
 
   let status: Status = 'green';
   if (conflicted) status = 'red';
@@ -126,6 +220,12 @@ export function solveContour(profile: ContourProfile): ContourSolution {
     points.forEach((p, i) => {
       if (p.x === null) needs.push(`${label(i)} diameter (X)`);
       if (p.z === null) needs.push(`${label(i)} position from P0 (Z)`);
+    });
+    profile.segments.forEach((seg, i) => {
+      if (seg.kind !== 'taper') return;
+      const known = [Len[i], Dx[i] ?? Mag[i], Ang[i]].filter((v) => v !== null).length;
+      if (known < 2) needs.push(`taper ${label(i)}→${label(i + 1)}: give any two of length, diameter change and angle`);
+      else if (Dx[i] === null && Dir[i] === null) needs.push(`taper ${label(i)}→${label(i + 1)}: whether the diameter gets BIGGER or SMALLER toward the chuck`);
     });
     if (needs.length) {
       status = 'amber';

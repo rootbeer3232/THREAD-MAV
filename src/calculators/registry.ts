@@ -42,7 +42,7 @@ export const CALCULATORS: CalculatorEntry[] = [
   planned('true-position', 'True Position', 'Coordinate deviation and position', 'holes'),
   { id: 'chamfer', name: 'Chamfer', blurb: 'Axial, radial, face length, angle — any two. End-face diameter.', category: 'geometry', status: 'ready', route: 'chamfer' },
   { id: 'arc', name: 'Radius / Chord / Sagitta', blurb: 'Any two of radius, chord, sagitta, angle.', category: 'geometry', status: 'ready', route: 'arc' },
-  { id: 'contour', name: 'Contour IQ', blurb: 'Lathe profile coordinates from print dimensions — straight steps and shoulders (radii & tapers coming).', category: 'geometry', status: 'ready', route: 'contour' },
+  { id: 'contour', name: 'Contour IQ', blurb: 'Lathe profile coordinates from print dimensions — straight steps, shoulders and tapers (radii coming).', category: 'geometry', status: 'ready', route: 'contour' },
   planned('ball-pin', 'Ball / Pin Measurement', 'Measurement over ball/pin', 'geometry'),
   { id: 'shim', name: 'Shim Stack', blurb: 'Fewest shims from YOUR drawer to hit a thickness.', category: 'geometry', status: 'ready', route: 'shim' },
   { id: 'speeds', name: 'Speeds & Feeds', blurb: 'Milling, turning, drilling: RPM, feed rate, SFM ↔ m/min.', category: 'cutting', status: 'ready', route: 'speeds' },

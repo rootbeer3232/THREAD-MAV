@@ -10,7 +10,7 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
     .filter((m) => m.level !== 'info')
     .map((m) => ({ tone: m.level === 'red' ? ('warn' as const) : ('warn' as const), text: m.level === 'red' ? `STOP — ${m.text}` : m.text }));
   const info: Presentation['messages'] = [
-    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps only so far — tapers and radii are coming.' },
+    { tone: 'info', text: 'X = diameter. Z is measured from program zero (P0), negative toward the chuck. Straight steps, shoulders and tapers so far — radii are coming.' },
   ];
 
   const level = sol.status;
@@ -33,12 +33,42 @@ export function presentContour(sol: ContourSolution, side: 'od' | 'id'): Present
   const known = sol.points.map((p) => p.x !== null || p.z !== null);
   const rows = coordRows.filter((_, i) => known[i]);
 
-  const segRows: ResultRow[] = sol.segments.map((s, i) => ({
-    label: `P${i + 1} → P${i + 2}  ${s.kind === 'straight' ? 'straight (length)' : 'shoulder (diameter change)'}`,
-    ...(s.value !== null ? { dual: dual(s.value) } : { text: 'unknown' }),
-    ...(s.source !== 'unknown' ? { tag: { text: s.source === 'given' ? 'GIVEN' : 'SOLVED', tone: s.source === 'given' ? ('geometry' as const) : ('verified' as const) } } : {}),
-    size: 'normal' as const,
-  }));
+  const tagOf = (src: Source) => (src === 'unknown' ? undefined : { text: src === 'given' ? 'GIVEN' : 'SOLVED', tone: src === 'given' ? ('geometry' as const) : ('verified' as const) });
+  const segRows: ResultRow[] = sol.segments.flatMap((s, i): ResultRow[] => {
+    const head = `P${i + 1} → P${i + 2}`;
+    if (s.kind === 'taper' && s.taper) {
+      const t = s.taper;
+      const rows: ResultRow[] = [];
+      const withTag = (r: ResultRow, src: Source): ResultRow => {
+        const tag = tagOf(src);
+        return tag ? { ...r, tag } : r;
+      };
+      rows.push(withTag({ label: `${head}  taper — axial length`, ...(t.length !== null ? { dual: dual(t.length) } : { text: 'unknown' }), size: 'normal' }, t.lengthSource));
+      if (t.dx !== null) {
+        rows.push(withTag({ label: `${head}  taper — diameter change (X)`, dual: dual(t.dx), size: 'normal' }, t.dxSource));
+        rows.push({ label: `${head}  taper — change per side (radius)`, dual: dual(t.dx / 2), size: 'normal' });
+      } else rows.push({ label: `${head}  taper — diameter change (X)`, text: 'unknown', size: 'normal' });
+      rows.push(
+        withTag(
+          {
+            label: `${head}  taper — angle from the axis`,
+            ...(t.angle !== null ? { text: `${t.angle.toFixed(4)}°`, altText: `${(90 - t.angle).toFixed(4)}° from the end face` } : { text: 'unknown' }),
+            size: 'normal',
+          },
+          t.angleSource,
+        ),
+      );
+      return rows;
+    }
+    return [
+      {
+        label: `${head}  ${s.kind === 'straight' ? 'straight (length)' : 'shoulder (diameter change)'}`,
+        ...(s.value !== null ? { dual: dual(s.value) } : { text: 'unknown' }),
+        ...(tagOf(s.source) ? { tag: tagOf(s.source)! } : {}),
+        size: 'normal' as const,
+      },
+    ];
+  });
 
   return {
     title: `Contour IQ — ${side.toUpperCase()}`,
